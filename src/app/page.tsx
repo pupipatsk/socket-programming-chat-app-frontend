@@ -1,11 +1,11 @@
 // src/app/page.tsx
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -13,32 +13,32 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 
 export default function HomePage() {
-  const [isLogin, setIsLogin] = useState(true)
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLogin, setIsLogin] = useState(true);
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     confirmPassword: "",
-  })
+  });
 
-  const toggleMode = () => setIsLogin(!isLogin)
+  const toggleMode = () => setIsLogin(!isLogin);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     if (!isLogin && formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match")
-      setIsLoading(false)
-      return
+      alert("Passwords don't match");
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -47,26 +47,42 @@ export default function HomePage() {
         JSON.stringify({
           username: formData.username,
           id: "user_" + Math.random().toString(36).substr(2, 9),
-        }),
-      )
-      router.push("/chat")
+        })
+      );
+      router.push("/chat");
     } catch (error) {
-      console.error("Auth failed:", error)
+      console.error("Auth failed:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+  const handleGuestLogin = () => {
+    const guestId = Math.floor(1 + Math.random() * 10).toString();
+    const guestUser = {
+      username: `Guest-${guestId}`,
+      id: guestId,
+    };
+    localStorage.setItem("user", JSON.stringify(guestUser));
+    router.push("/chat");
+  };
 
   return (
-    <main className="flex min-h-screen bg-gradient-light">
+    <main className="flex min-h-screen">
       <div className="w-1/2 hidden md:flex items-center justify-center p-10 bg-white/40 border-r border-gray-200">
         <h1 className="text-4xl font-light text-black max-w-sm leading-relaxed">
-          Connect in Real-Time.<br />
+          Connect in Real-Time.
+          <br />
           Chat beautifully, simply.
         </h1>
       </div>
 
-      <div className="w-full md:w-1/2 flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)" }}>
+      <div
+        className="w-full md:w-1/2 flex items-center justify-center p-4"
+        style={{
+          background: "linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)",
+        }}
+      >
         <Card className="w-full max-w-md glass-card">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">
@@ -122,6 +138,7 @@ export default function HomePage() {
               )}
               <Button
                 type="submit"
+                // variant="default"
                 className="w-full bg-black text-white hover:bg-black/90"
                 disabled={isLoading}
               >
@@ -130,11 +147,19 @@ export default function HomePage() {
                     ? "Logging in..."
                     : "Creating account..."
                   : isLogin
-                    ? "Login"
-                    : "Register"}
+                  ? "Login"
+                  : "Register"}
+              </Button>
+              <Button
+                type="button"
+                className="w-full bg-gray-100 text-black hover:bg-gray-200"
+                onClick={handleGuestLogin}
+              >
+                Continue as Guest
               </Button>
             </form>
           </CardContent>
+          {/* Footer: Don't have an account? Register */}
           <CardFooter className="flex justify-center">
             <p className="text-sm text-black/60">
               {isLogin ? "Don’t have an account?" : "Already have an account?"}{" "}
@@ -149,5 +174,5 @@ export default function HomePage() {
         </Card>
       </div>
     </main>
-  )
+  );
 }
