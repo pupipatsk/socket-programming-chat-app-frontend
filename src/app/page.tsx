@@ -66,7 +66,7 @@ export default function HomePage() {
         </h1>
       </div>
 
-      <div className="w-full md:w-1/2 flex items-center justify-center p-4">
+      <div className="w-full md:w-1/2 flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)" }}>
         <Card className="w-full max-w-md glass-card">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">
