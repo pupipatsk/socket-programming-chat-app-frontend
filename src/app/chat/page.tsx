@@ -1,3 +1,4 @@
+// src/app/chat/page.tsx
 "use client"
 
 import { useEffect, useState } from "react"
@@ -159,7 +160,7 @@ export default function ChatPage() {
   return (
     <ChatLayout user={user} onLogout={handleLogout} connectionStatus={isConnected ? "Connected" : "Disconnected"}>
       <div className="flex h-full">
-        <div className="w-64 border-r border-black/10 dark:border-white/10 p-4 space-y-6 glass">
+        <div className="w-64 border-r border-black/10 p-4 space-y-6 glass">
           <UserList
             users={users}
             currentUser={user}

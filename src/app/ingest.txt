@@ -1,0 +1,624 @@
+Directory structure:
+└── app/
+    ├── globals.css
+    ├── layout.tsx
+    ├── page.tsx
+    ├── chat/
+    │   └── page.tsx
+    ├── login/
+    │   └── page.tsx
+    └── register/
+        └── page.tsx
+
+================================================
+File: globals.css
+================================================
+/* src/app/globals.css */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #000000;
+  --muted: #f0f0f0;
+  --muted-foreground: #6b7280;
+  --accent: #f0f0f0;
+  --accent-foreground: #000000;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: rgba(0, 0, 0, 0.1);
+  --ring: #000000;
+}
+
+@layer base {
+  * {
+    outline-color: var(--color-ring);
+    border-color: var(--color-border);
+  }
+}
+
+/* Glassmorphism styles */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: inherit;
+}
+
+/* Gradient backgrounds */
+.bg-gradient-light {
+  background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+}
+
+
+
+================================================
+File: layout.tsx
+================================================
+import type React from "react"
+import type { Metadata } from "next"
+import { Geist, Geist_Mono } from "next/font/google"
+import "./globals.css"
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+})
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+})
+
+export const metadata: Metadata = {
+  title: "Chat Application",
+  description: "A real-time chat application",
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
+  return (
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+    </html>
+  )
+}
+
+
+
+================================================
+File: page.tsx
+================================================
+// src/app/page.tsx
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
+export default function Home() {
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-white to-gray-100 flex items-center justify-center px-4">
+      <section className="backdrop-blur-xl bg-white/60 border border-white/30 rounded-3xl shadow-xl p-10 max-w-5xl w-full">
+        <div className="flex flex-col md:flex-row items-center gap-10">
+          <div className="flex-1 space-y-6 text-center md:text-left">
+            <h1 className="text-5xl font-light text-gray-900 tracking-tight">
+              Connect in Real-Time
+            </h1>
+            <p className="text-lg text-gray-600">
+              Minimal, fluid chat that keeps you connected—beautifully.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center md:justify-start gap-4">
+              <Link href="/login" passHref>
+                <Button className="w-full sm:w-auto bg-black/80 text-white hover:bg-black">
+                  Log In
+                </Button>
+              </Link>
+              <Link href="/register" passHref>
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto border-gray-300 hover:bg-white/40"
+                >
+                  Create Account
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+
+================================================
+File: chat/page.tsx
+================================================
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ChatLayout } from "@/components/chat-layout"
+import { ChatWindow } from "@/components/chat-window"
+import { UserList } from "@/components/user-list"
+import { GroupList } from "@/components/group-list"
+import { ChatInput } from "@/components/chat-input"
+import { initializeSocket, disconnectSocket } from "@/lib/socket"
+import type { User, Group, Message } from "@/types"
+
+export default function ChatPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [users, setUsers] = useState<User[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
+  const [activeChat, setActiveChat] = useState<{ type: "user" | "group"; id: string } | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isConnected, setIsConnected] = useState(false)
+
+  // Check if user is logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user")
+    if (!storedUser) {
+      router.push("/login")
+      return
+    }
+
+    const parsedUser = JSON.parse(storedUser)
+    setUser(parsedUser)
+
+    // Initialize socket connection
+    const socket = initializeSocket(parsedUser)
+
+    // Socket event listeners
+    socket.on("connect", () => {
+      console.log("Connected to socket server")
+      setIsConnected(true)
+    })
+
+    socket.on("disconnect", () => {
+      console.log("Disconnected from socket server")
+      setIsConnected(false)
+    })
+
+    socket.on("users", (userList: User[]) => {
+      setUsers(userList)
+    })
+
+    socket.on("groups", (groupList: Group[]) => {
+      setGroups(groupList)
+    })
+
+    socket.on("private_message", (message: Message) => {
+      if (activeChat?.type === "user" && (activeChat.id === message.from || activeChat.id === message.to)) {
+        setMessages((prev) => [...prev, message])
+      }
+    })
+
+    socket.on("group_message", (message: Message) => {
+      if (activeChat?.type === "group" && activeChat.id === message.to) {
+        setMessages((prev) => [...prev, message])
+      }
+    })
+
+    // Clean up on unmount
+    return () => {
+      disconnectSocket()
+    }
+  }, [router])
+
+  // Load messages when active chat changes
+  useEffect(() => {
+    if (!activeChat || !user) return
+
+    // Clear current messages
+    setMessages([])
+
+    try {
+      const socket = initializeSocket(user)
+
+      // Request message history from server
+      if (activeChat.type === "user") {
+        socket.emit("get_private_messages", { userId: activeChat.id }, (response: Message[]) => {
+          setMessages(response || [])
+        })
+      } else {
+        socket.emit("get_group_messages", { groupId: activeChat.id }, (response: Message[]) => {
+          setMessages(response || [])
+        })
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error)
+    }
+  }, [activeChat, user])
+
+  const handleSendMessage = (content: string) => {
+    if (!activeChat || !user) return
+
+    try {
+      const socket = initializeSocket(user)
+      const message: Partial<Message> = {
+        content,
+        from: user.id,
+        timestamp: new Date().toISOString(),
+      }
+
+      if (activeChat.type === "user") {
+        socket.emit("send_private_message", {
+          ...message,
+          to: activeChat.id,
+        })
+      } else {
+        socket.emit("send_group_message", {
+          ...message,
+          to: activeChat.id,
+        })
+      }
+    } catch (error) {
+      console.error("Error sending message:", error)
+    }
+  }
+
+  const handleCreateGroup = (name: string) => {
+    if (!user) return
+
+    try {
+      const socket = initializeSocket(user)
+      socket.emit("create_group", { name }, (response: Group) => {
+        setGroups((prev) => [...prev, response])
+      })
+    } catch (error) {
+      console.error("Error creating group:", error)
+    }
+  }
+
+  const handleJoinGroup = (groupId: string) => {
+    if (!user) return
+
+    try {
+      const socket = initializeSocket(user)
+      socket.emit("join_group", { groupId })
+    } catch (error) {
+      console.error("Error joining group:", error)
+    }
+  }
+
+  const handleLogout = () => {
+    disconnectSocket()
+    localStorage.removeItem("user")
+    router.push("/login")
+  }
+
+  if (!user) {
+    return <div>Loading...</div>
+  }
+
+  return (
+    <ChatLayout user={user} onLogout={handleLogout} connectionStatus={isConnected ? "Connected" : "Disconnected"}>
+      <div className="flex h-full">
+        <div className="w-64 border-r border-black/10 p-4 space-y-6 glass">
+          <UserList
+            users={users}
+            currentUser={user}
+            onSelectUser={(userId) => setActiveChat({ type: "user", id: userId })}
+            activeChat={activeChat}
+          />
+          <GroupList
+            groups={groups}
+            onSelectGroup={(groupId) => setActiveChat({ type: "group", id: groupId })}
+            onCreateGroup={handleCreateGroup}
+            onJoinGroup={handleJoinGroup}
+            activeChat={activeChat}
+          />
+        </div>
+        <div className="flex-1 flex flex-col">
+          <ChatWindow messages={messages} currentUser={user} activeChat={activeChat} users={users} groups={groups} />
+          <ChatInput onSendMessage={handleSendMessage} />
+        </div>
+      </div>
+    </ChatLayout>
+  )
+}
+
+
+
+================================================
+File: login/page.tsx
+================================================
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      // In a real application, you would validate and send to your backend
+      console.log("Logging in with:", formData)
+
+      // Store user info in localStorage (in a real app, you'd store a JWT token)
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          username: formData.username,
+          id: "user_" + Math.random().toString(36).substr(2, 9),
+        }),
+      )
+
+      // Redirect to chat page
+      router.push("/chat")
+    } catch (error) {
+      console.error("Login failed:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-light">
+      <Card className="w-full max-w-md glass-card">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">Login</CardTitle>
+          <CardDescription>Enter your credentials to continue</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                placeholder="Enter your username"
+                required
+                value={formData.username}
+                onChange={handleChange}
+                className="glass-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="glass-input"
+              />
+            </div>
+            <Button type="submit" className="w-full bg-black text-white hover:bg-black/90" disabled={isLoading}>
+              {isLoading ? "Logging in..." : "Login"}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-black/60">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="text-black font-medium hover:underline">
+              Register
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
+    </main>
+  )
+}
+
+
+
+================================================
+File: register/page.tsx
+================================================
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+
+export default function RegisterPage() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+    confirmPassword: "",
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      // Check if passwords match
+      if (formData.password !== formData.confirmPassword) {
+        alert("Passwords don't match!")
+        setIsLoading(false)
+        return
+      }
+
+      // In a real application, you would validate and send to your backend
+      console.log("Registering with:", formData)
+
+      // Store user info in localStorage (in a real app, you'd store a JWT token)
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          username: formData.username,
+          id: "user_" + Math.random().toString(36).substr(2, 9),
+        }),
+      )
+
+      // Redirect to chat page
+      router.push("/chat")
+    } catch (error) {
+      console.error("Registration failed:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-light">
+      <Card className="w-full max-w-md glass-card">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+          <CardDescription>Sign up to join the conversation</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                placeholder="Choose a username"
+                required
+                value={formData.username}
+                onChange={handleChange}
+                className="glass-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Choose a password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="glass-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="glass-input"
+              />
+            </div>
+            <Button type="submit" className="w-full bg-black text-white hover:bg-black/90" disabled={isLoading}>
+              {isLoading ? "Creating account..." : "Register"}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-black/60">
+            Already have an account?{" "}
+            <Link href="/login" className="text-black font-medium hover:underline">
+              Login
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
+    </main>
+  )
+}
+
+

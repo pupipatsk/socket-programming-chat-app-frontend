@@ -35,14 +35,14 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Users className="h-5 w-5 text-black/60 dark:text-white/60" />
+          <Users className="h-5 w-5 text-black/60" />
           <h2 className="text-lg font-semibold">Groups</h2>
-          <div className="text-sm text-black/60 dark:text-white/60">({groups.length})</div>
+          <div className="text-sm text-black/60">({groups.length})</div>
         </div>
 
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/5 dark:hover:bg-white/5">
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/5">
               <Plus className="h-4 w-4" />
               <span className="sr-only">Create Group</span>
             </Button>
@@ -58,10 +58,7 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
                 onChange={(e) => setNewGroupName(e.target.value)}
                 className="glass-input"
               />
-              <Button
-                type="submit"
-                className="w-full bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
-              >
+              <Button type="submit" className="w-full bg-black text-white hover:bg-black/90">
                 Create Group
               </Button>
             </form>
@@ -69,7 +66,7 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
         </Dialog>
       </div>
 
-      <ScrollArea className="h-48 rounded-md border border-black/10 dark:border-white/10 bg-white/5 dark:bg-black/5">
+      <ScrollArea className="h-48 rounded-md border border-black/10 bg-white/5">
         <div className="p-2">
           {groups.length > 0 ? (
             groups.map((group) => (
@@ -77,17 +74,17 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
                 <Button
                   variant="ghost"
                   className={`flex-1 justify-start ${
-                    activeChat?.type === "group" && activeChat.id === group.id ? "bg-black/10 dark:bg-white/10" : ""
-                  } hover:bg-black/5 dark:hover:bg-white/5`}
+                    activeChat?.type === "group" && activeChat.id === group.id ? "bg-black/10" : ""
+                  } hover:bg-black/5`}
                   onClick={() => onSelectGroup(group.id)}
                 >
                   <span className="truncate">{group.name}</span>
-                  <span className="ml-2 text-xs text-black/60 dark:text-white/60">({group.members?.length || 0})</span>
+                  <span className="ml-2 text-xs text-black/60">({group.members?.length || 0})</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 hover:bg-black/5 dark:hover:bg-white/5"
+                  className="h-8 w-8 hover:bg-black/5"
                   onClick={() => onJoinGroup(group.id)}
                 >
                   <UserPlus className="h-4 w-4" />
@@ -96,7 +93,7 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
               </div>
             ))
           ) : (
-            <div className="text-center py-4 text-black/40 dark:text-white/40">No groups available</div>
+            <div className="text-center py-4 text-black/40">No groups available</div>
           )}
         </div>
       </ScrollArea>

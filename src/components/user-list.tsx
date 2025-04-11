@@ -19,12 +19,12 @@ export function UserList({ users, currentUser, onSelectUser, activeChat }: UserL
   return (
     <div className="space-y-2">
       <div className="flex items-center space-x-2">
-        <Users className="h-5 w-5 text-black/60 dark:text-white/60" />
+        <Users className="h-5 w-5 text-black/60" />
         <h2 className="text-lg font-semibold">Users</h2>
-        <div className="text-sm text-black/60 dark:text-white/60">({filteredUsers.length})</div>
+        <div className="text-sm text-black/60">({filteredUsers.length})</div>
       </div>
 
-      <ScrollArea className="h-48 rounded-md border border-black/10 dark:border-white/10 bg-white/5 dark:bg-black/5">
+      <ScrollArea className="h-48 rounded-md border border-black/10 bg-white/5">
         <div className="p-2">
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user) => (
@@ -32,8 +32,8 @@ export function UserList({ users, currentUser, onSelectUser, activeChat }: UserL
                 key={user.id}
                 variant="ghost"
                 className={`w-full justify-start mb-1 ${
-                  activeChat?.type === "user" && activeChat.id === user.id ? "bg-black/10 dark:bg-white/10" : ""
-                } hover:bg-black/5 dark:hover:bg-white/5`}
+                  activeChat?.type === "user" && activeChat.id === user.id ? "bg-black/10" : ""
+                } hover:bg-black/5`}
                 onClick={() => onSelectUser(user.id)}
               >
                 <div className="flex items-center">
@@ -43,7 +43,7 @@ export function UserList({ users, currentUser, onSelectUser, activeChat }: UserL
               </Button>
             ))
           ) : (
-            <div className="text-center py-4 text-black/40 dark:text-white/40">No users online</div>
+            <div className="text-center py-4 text-black/40">No users online</div>
           )}
         </div>
       </ScrollArea>
