@@ -33,10 +33,12 @@ export function ChatLayout({
               className={
                 connectionStatus === "Connected"
                   ? "text-green-600"
-                  : "text-red-600"
+                  : connectionStatus
+                  ? "text-red-600"
+                  : "text-gray-600"
               }
             >
-              {connectionStatus}
+              {connectionStatus || "Unknown"}
             </span>
           </div>
         </div>

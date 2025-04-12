@@ -1,4 +1,3 @@
-// src/app/chat/page.tsx
 "use client"
 
 import { useEffect, useState } from "react"
@@ -8,7 +7,7 @@ import { ChatWindow } from "@/components/chat-window"
 import { UserList } from "@/components/user-list"
 import { GroupList } from "@/components/group-list"
 import { ChatInput } from "@/components/chat-input"
-import { initializeSocket, disconnectSocket } from "@/lib/socket"
+import { mockApi } from "@/lib/mock-api"
 import type { User, Group, Message } from "@/types"
 
 export default function ChatPage() {
@@ -18,149 +17,130 @@ export default function ChatPage() {
   const [groups, setGroups] = useState<Group[]>([])
   const [activeChat, setActiveChat] = useState<{ type: "user" | "group"; id: string } | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
-  const [isConnected, setIsConnected] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Check if user is logged in
   useEffect(() => {
     const storedUser = localStorage.getItem("user")
     if (!storedUser) {
-      router.push("/login")
+      router.push("/")
       return
     }
 
     const parsedUser = JSON.parse(storedUser)
     setUser(parsedUser)
 
-    // Initialize socket connection
-    const socket = initializeSocket(parsedUser)
+    // Load initial data
+    const loadInitialData = async () => {
+      try {
+        const [activeUsers, allGroups] = await Promise.all([mockApi.getActiveUsers(), mockApi.getGroups()])
 
-    // Socket event listeners
-    socket.on("connect", () => {
-      console.log("Connected to socket server")
-      setIsConnected(true)
-    })
-
-    socket.on("disconnect", () => {
-      console.log("Disconnected from socket server")
-      setIsConnected(false)
-    })
-
-    socket.on("users", (userList: User[]) => {
-      setUsers(userList)
-    })
-
-    socket.on("groups", (groupList: Group[]) => {
-      setGroups(groupList)
-    })
-
-    socket.on("private_message", (message: Message) => {
-      if (activeChat?.type === "user" && (activeChat.id === message.from || activeChat.id === message.to)) {
-        setMessages((prev) => [...prev, message])
+        setUsers(activeUsers)
+        setGroups(allGroups)
+      } catch (error) {
+        console.error("Failed to load initial data:", error)
+      } finally {
+        setIsLoading(false)
       }
-    })
-
-    socket.on("group_message", (message: Message) => {
-      if (activeChat?.type === "group" && activeChat.id === message.to) {
-        setMessages((prev) => [...prev, message])
-      }
-    })
-
-    // Clean up on unmount
-    return () => {
-      disconnectSocket()
     }
+
+    loadInitialData()
   }, [router])
 
   // Load messages when active chat changes
   useEffect(() => {
     if (!activeChat || !user) return
 
-    // Clear current messages
-    setMessages([])
+    const loadMessages = async () => {
+      setIsLoading(true)
+      try {
+        let chatMessages: Message[] = []
 
-    try {
-      const socket = initializeSocket(user)
+        if (activeChat.type === "user") {
+          chatMessages = await mockApi.getPrivateMessages(user.id, activeChat.id)
+        } else {
+          chatMessages = await mockApi.getGroupMessages(activeChat.id)
+        }
 
-      // Request message history from server
-      if (activeChat.type === "user") {
-        socket.emit("get_private_messages", { userId: activeChat.id }, (response: Message[]) => {
-          setMessages(response || [])
-        })
-      } else {
-        socket.emit("get_group_messages", { groupId: activeChat.id }, (response: Message[]) => {
-          setMessages(response || [])
-        })
+        setMessages(chatMessages)
+      } catch (error) {
+        console.error("Error loading messages:", error)
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error("Error loading messages:", error)
     }
+
+    loadMessages()
   }, [activeChat, user])
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     if (!activeChat || !user) return
 
     try {
-      const socket = initializeSocket(user)
-      const message: Partial<Message> = {
+      const messageData = {
         content,
         from: user.id,
+        to: activeChat.id,
         timestamp: new Date().toISOString(),
+        type: activeChat.type === "user" ? "private" : "group",
       }
 
+      let newMessage: Message
+
       if (activeChat.type === "user") {
-        socket.emit("send_private_message", {
-          ...message,
-          to: activeChat.id,
-        })
+        newMessage = await mockApi.sendPrivateMessage(messageData)
       } else {
-        socket.emit("send_group_message", {
-          ...message,
-          to: activeChat.id,
-        })
+        newMessage = await mockApi.sendGroupMessage(messageData)
       }
+
+      setMessages((prev) => [...prev, newMessage])
     } catch (error) {
       console.error("Error sending message:", error)
     }
   }
 
-  const handleCreateGroup = (name: string) => {
+  const handleCreateGroup = async (name: string) => {
     if (!user) return
 
     try {
-      const socket = initializeSocket(user)
-      socket.emit("create_group", { name }, (response: Group) => {
-        setGroups((prev) => [...prev, response])
-      })
+      const newGroup = await mockApi.createGroup(name, user.id)
+      setGroups((prev) => [...prev, newGroup])
     } catch (error) {
       console.error("Error creating group:", error)
     }
   }
 
-  const handleJoinGroup = (groupId: string) => {
+  const handleJoinGroup = async (groupId: string) => {
     if (!user) return
 
     try {
-      const socket = initializeSocket(user)
-      socket.emit("join_group", { groupId })
+      await mockApi.joinGroup(groupId, user.id)
+
+      // Refresh groups list
+      const updatedGroups = await mockApi.getGroups()
+      setGroups(updatedGroups)
     } catch (error) {
       console.error("Error joining group:", error)
     }
   }
 
   const handleLogout = () => {
-    disconnectSocket()
     localStorage.removeItem("user")
-    router.push("/login")
+    router.push("/")
   }
 
   if (!user) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-light">
+        <div className="text-lg">Loading...</div>
+      </div>
+    )
   }
 
   return (
-    <ChatLayout user={user} onLogout={handleLogout} connectionStatus={isConnected ? "Connected" : "Disconnected"}>
+    <ChatLayout user={user} onLogout={handleLogout}>
       <div className="flex h-full">
-        <div className="w-64 border-r border-black/10 p-4 space-y-6 glass">
+        <div className="w-64 border-r border-black/5 p-4 space-y-6 glass">
           <UserList
             users={users}
             currentUser={user}
@@ -176,7 +156,14 @@ export default function ChatPage() {
           />
         </div>
         <div className="flex-1 flex flex-col">
-          <ChatWindow messages={messages} currentUser={user} activeChat={activeChat} users={users} groups={groups} />
+          <ChatWindow
+            messages={messages}
+            currentUser={user}
+            activeChat={activeChat}
+            users={users}
+            groups={groups}
+            isLoading={isLoading}
+          />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>
       </div>
