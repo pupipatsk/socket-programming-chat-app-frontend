@@ -1,7 +1,7 @@
 # Project
 
 ## Tech stack
-- Design style: Glassmorphism
+- Design style: Zen, Glassmorphism, McKinsey
 - Frontend: Next.js
   - Tailwind CSS / ShadCN
   - React
