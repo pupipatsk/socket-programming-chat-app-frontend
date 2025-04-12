@@ -137,7 +137,7 @@ export default function HomePage() {
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 className="w-full"
                 onClick={handleGuestLogin}
                 disabled={isLoading}
