@@ -1,3 +1,4 @@
+// src/app/chat/page.tsx
 "use client"
 
 import { useEffect, useState } from "react"
@@ -8,18 +9,19 @@ import { UserList } from "@/components/user-list"
 import { GroupList } from "@/components/group-list"
 import { ChatInput } from "@/components/chat-input"
 import { mockApi } from "@/lib/mock-api"
-import type { User, Group, Message } from "@/types"
+import type { User, GroupChat, Message } from "@/types"
 
 export default function ChatPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [users, setUsers] = useState<User[]>([])
-  const [groups, setGroups] = useState<Group[]>([])
+  const [groups, setGroups] = useState<GroupChat[]>([])
   const [activeChat, setActiveChat] = useState<{ type: "user" | "group"; id: string } | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [connectionStatus, setConnectionStatus] = useState("Connected") // 👈 Add this
 
-  // Check if user is logged in
+
   useEffect(() => {
     const storedUser = localStorage.getItem("user")
     if (!storedUser) {
@@ -30,11 +32,12 @@ export default function ChatPage() {
     const parsedUser = JSON.parse(storedUser)
     setUser(parsedUser)
 
-    // Load initial data
     const loadInitialData = async () => {
       try {
-        const [activeUsers, allGroups] = await Promise.all([mockApi.getActiveUsers(), mockApi.getGroups()])
-
+        const [activeUsers, allGroups] = await Promise.all([
+          mockApi.getActiveUsers(),
+          mockApi.getGroups(),
+        ])
         setUsers(activeUsers)
         setGroups(allGroups)
       } catch (error) {
@@ -47,20 +50,16 @@ export default function ChatPage() {
     loadInitialData()
   }, [router])
 
-  // Load messages when active chat changes
   useEffect(() => {
     if (!activeChat || !user) return
 
     const loadMessages = async () => {
       setIsLoading(true)
       try {
-        let chatMessages: Message[] = []
-
-        if (activeChat.type === "user") {
-          chatMessages = await mockApi.getPrivateMessages(user.id, activeChat.id)
-        } else {
-          chatMessages = await mockApi.getGroupMessages(activeChat.id)
-        }
+        const chatMessages =
+          activeChat.type === "user"
+            ? await mockApi.getPrivateMessages(user.id, activeChat.id)
+            : await mockApi.getGroupMessages(activeChat.id)
 
         setMessages(chatMessages)
       } catch (error) {
@@ -77,21 +76,10 @@ export default function ChatPage() {
     if (!activeChat || !user) return
 
     try {
-      const messageData = {
-        content,
-        from: user.id,
-        to: activeChat.id,
-        timestamp: new Date().toISOString(),
-        type: activeChat.type === "user" ? "private" : "group",
-      }
-
-      let newMessage: Message
-
-      if (activeChat.type === "user") {
-        newMessage = await mockApi.sendPrivateMessage(messageData)
-      } else {
-        newMessage = await mockApi.sendGroupMessage(messageData)
-      }
+      const newMessage =
+        activeChat.type === "user"
+          ? await mockApi.sendPrivateMessage(user.id, activeChat.id, content)
+          : await mockApi.sendGroupMessage(activeChat.id, user.id, content)
 
       setMessages((prev) => [...prev, newMessage])
     } catch (error) {
@@ -115,8 +103,6 @@ export default function ChatPage() {
 
     try {
       await mockApi.joinGroup(groupId, user.id)
-
-      // Refresh groups list
       const updatedGroups = await mockApi.getGroups()
       setGroups(updatedGroups)
     } catch (error) {
@@ -138,7 +124,7 @@ export default function ChatPage() {
   }
 
   return (
-    <ChatLayout user={user} onLogout={handleLogout}>
+    <ChatLayout user={user} onLogout={handleLogout} connectionStatus={connectionStatus}>
       <div className="flex h-full">
         <div className="w-64 border-r border-black/5 p-4 space-y-6 glass">
           <UserList

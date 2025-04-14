@@ -1,15 +1,17 @@
+// src/app/chat/page.tsx
 "use client"
 
 import { useEffect, useRef } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { Message, User, Group } from "@/types"
+import type { Message, User, GroupChat } from "@/types"
 
 interface ChatWindowProps {
   messages: Message[]
   currentUser: User
   activeChat: { type: "user" | "group"; id: string } | null
   users: User[]
-  groups: Group[]
+  groups: GroupChat[]
+  isLoading: boolean
 }
 
 export function ChatWindow({ messages, currentUser, activeChat, users, groups }: ChatWindowProps) {
@@ -22,7 +24,6 @@ export function ChatWindow({ messages, currentUser, activeChat, users, groups }:
     }
   }, [messages])
 
-  // Get the name of the active chat
   const getActiveChatName = () => {
     if (!activeChat) return "Select a chat"
 
@@ -35,14 +36,12 @@ export function ChatWindow({ messages, currentUser, activeChat, users, groups }:
     }
   }
 
-  // Get the username for a user ID
   const getUserName = (userId: string) => {
     if (userId === currentUser.id) return "You"
     const user = users.find((u) => u.id === userId)
     return user ? user.username : "Unknown user"
   }
 
-  // Format timestamp
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -58,19 +57,29 @@ export function ChatWindow({ messages, currentUser, activeChat, users, groups }:
         {activeChat ? (
           messages.length > 0 ? (
             <div className="space-y-4">
-              {messages.map((message, index) => {
-                const isCurrentUser = message.from === currentUser.id
+              {messages.map((message) => {
+                const isCurrentUser = message.author === currentUser.id
+                const isDeleted = message.deleted
 
                 return (
-                  <div key={index} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
+                  <div key={message.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? "bg-black text-white" : "bg-black/10"}`}
+                      className={`max-w-[70%] rounded-lg p-3 ${
+                        isCurrentUser ? "bg-black text-white" : "bg-black/10"
+                      }`}
                     >
                       {!isCurrentUser && activeChat.type === "group" && (
-                        <div className="text-xs font-semibold mb-1">{getUserName(message.from)}</div>
+                        <div className="text-xs font-semibold mb-1">
+                          {getUserName(message.author)}
+                        </div>
                       )}
-                      <div>{message.content}</div>
-                      <div className="text-xs opacity-70 text-right mt-1">{formatTime(message.timestamp)}</div>
+                      <div className={`${isDeleted ? "italic text-black/50" : ""}`}>
+                        {isDeleted ? "[Message deleted]" : message.content}
+                      </div>
+                      <div className="text-xs opacity-70 text-right mt-1">
+                        {formatTime(message.timestamp)}
+                        {message.edited && !message.deleted && <span className="ml-1">(edited)</span>}
+                      </div>
                     </div>
                   </div>
                 )

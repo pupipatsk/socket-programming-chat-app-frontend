@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import type { Group } from "@/types"
+import type { GroupChat } from "@/types"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Users, Plus, UserPlus } from "lucide-react"
 
 interface GroupListProps {
-  groups: Group[]
+  groups: GroupChat[]
   onSelectGroup: (groupId: string) => void
   onCreateGroup: (name: string) => void
   onJoinGroup: (groupId: string) => void
