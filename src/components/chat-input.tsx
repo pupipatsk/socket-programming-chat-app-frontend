@@ -38,7 +38,7 @@ export function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
-          className="resize-none glass-input"
+          className="resize-none glass-input bg-white/50"
           rows={2}
           disabled={disabled}
         />
