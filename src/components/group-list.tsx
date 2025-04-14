@@ -77,7 +77,7 @@ export function GroupList({
       toast({
         title: "Group joined",
         description: `You have joined ${selectedGroupForJoin.name}`,
-        duration: 3000,
+        duration: 1500,
       });
     }
   };
@@ -131,49 +131,64 @@ export function GroupList({
               const isUserMember = isUserInGroup(currentUserId, group);
 
               return (
-                <div key={group.id} className="flex items-center mb-1">
-                  <Button
-                    variant="ghost"
-                    className={`flex-1 justify-start ${
-                      activeChat?.type === "group" && activeChat.id === group.id
-                        ? "bg-black/10"
-                        : ""
-                    } hover:bg-black/5`}
-                    onClick={() => onSelectGroup(group.id)}
-                  >
-                    <span className="truncate">{group.name}</span>
-                    <span className="ml-2 text-xs text-black/60">
+                <div
+                  key={group.id}
+                  className={`
+    grid grid-cols-[1fr_auto_auto] items-center gap-0 px-2 py-1 mb-1 rounded transition cursor-pointer
+    ${
+      activeChat?.type === "group" && activeChat.id === group.id
+        ? "bg-black/10"
+        : "hover:bg-black/5"
+    }
+  `}
+                  onClick={() => onSelectGroup(group.id)}
+                >
+                  {/* Group name and count */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="truncate text-sm font-medium">
+                      {group.name}
+                    </span>
+                    <span className="text-xs text-black/60 whitespace-nowrap">
                       ({group.members?.length || 0})
                     </span>
-                    {isUserMember && (
-                      <Check className="h-3 w-3 ml-1 text-green-500" />
-                    )}
-                  </Button>
+                  </div>
+
+                  {/* Join icon */}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 hover:bg-black/5"
-                    onClick={() => handleJoinButtonClick(group)}
-                    title={isUserMember ? "Already a member" : "Join Group"}
+                    className="h-8 w-8 p-0 hover:bg-black/5 flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleJoinButtonClick(group);
+                    }}
+                    title={
+                      isUserInGroup(currentUserId, group)
+                        ? "Already a member"
+                        : "Join Group"
+                    }
                   >
                     <UserPlus
                       className={`h-4 w-4 ${
-                        isUserMember ? "text-green-500" : ""
+                        isUserInGroup(currentUserId, group)
+                          ? "text-green-500"
+                          : ""
                       }`}
                     />
-                    <span className="sr-only">
-                      {isUserMember ? "Already a member" : "Join Group"}
-                    </span>
                   </Button>
+
+                  {/* Info icon */}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 hover:bg-black/5"
-                    onClick={() => onViewGroupDetails(group.id)}
+                    className="h-8 w-8 p-0 hover:bg-black/5 flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewGroupDetails(group.id);
+                    }}
                     title="Group Details"
                   >
                     <Info className="h-4 w-4" />
-                    <span className="sr-only">Group Details</span>
                   </Button>
                 </div>
               );
