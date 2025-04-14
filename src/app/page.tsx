@@ -2,19 +2,18 @@
 
 import type React from "react"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { mockApi } from "@/lib/mock-api"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function HomePage() {
   const [isLogin, setIsLogin] = useState(true)
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const { login, register, guestLogin, isLoading } = useAuth()
   const [formData, setFormData] = useState({
     username: "",
+    email: "",
     password: "",
     confirmPassword: "",
   })
@@ -27,48 +26,20 @@ export default function HomePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
     if (!isLogin && formData.password !== formData.confirmPassword) {
       alert("Passwords don't match")
-      setIsLoading(false)
       return
     }
 
     try {
-      // For demo purposes, we'll just create a new user or use an existing one
       if (isLogin) {
-        // Simulate login by getting a random user
-        const users = await mockApi.getActiveUsers()
-        const randomUser = users[Math.floor(Math.random() * users.length)]
-
-        localStorage.setItem("user", JSON.stringify(randomUser))
+        await login(formData.username, formData.password)
       } else {
-        // Register new user
-        const newUser = await mockApi.addUser(formData.username)
-        localStorage.setItem("user", JSON.stringify(newUser))
+        await register(formData.username, formData.email || `${formData.username}@example.com`)
       }
-
-      router.push("/chat")
     } catch (error) {
       console.error("Auth failed:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleGuestLogin = async () => {
-    try {
-      setIsLoading(true)
-      const guestName = `Guest-${Math.floor(1000 + Math.random() * 9000)}`
-      const guestUser = await mockApi.addUser(guestName)
-
-      localStorage.setItem("user", JSON.stringify(guestUser))
-      router.push("/chat")
-    } catch (error) {
-      console.error("Guest login failed:", error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -104,6 +75,22 @@ export default function HomePage() {
                   className="zen-input"
                 />
               </div>
+
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Email (optional)"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="zen-input"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -117,6 +104,7 @@ export default function HomePage() {
                   className="zen-input"
                 />
               </div>
+
               {!isLogin && (
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -132,16 +120,12 @@ export default function HomePage() {
                   />
                 </div>
               )}
+
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (isLogin ? "Logging in..." : "Creating account...") : isLogin ? "Login" : "Register"}
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                onClick={handleGuestLogin}
-                disabled={isLoading}
-              >
+
+              <Button type="button" variant="secondary" className="w-full" onClick={guestLogin} disabled={isLoading}>
                 Continue as Guest
               </Button>
             </form>

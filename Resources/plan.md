@@ -12,7 +12,7 @@
 ## Requirements
 - Min: 2 client, 1 server
 - Set client name
-- Lis of active users
+- List of active users
 - Chat box + chat window
 - Private/Direct messages (only sender & receiver see)
 - Create chat groups
@@ -40,32 +40,32 @@
 ```json
 {
   "id": ObjectId,
-  "user_name": string,
+  "username": string,
   "email": string,
   "status": string,
-  "private_chats": [ObjectId],
-  "groups": [ObjectId]
+  "private_chats": [ObjectId (ref: PrivateChat)],
+  "groups": [ObjectId (ref: GroupChat)]
 }
 ```
 
-## Private Chats
+## PrivateChat
 
 ```json
 {
   "id": ObjectId,
-  "members": [UserId], // Min 2 members per chat
+  "members": [ObjectId (ref: User)], // Minimum 2 members
   "messages": [Message]
 }
 ```
 
-## Group Chats
+## GroupChat
 
 ```json
 {
   "id": ObjectId,
   "name": string,
-  "creator": UserId,
-  "members": [UserId],
+  "creator": ObjectId (ref: User),
+  "members": [ObjectId (ref: User)],
   "messages": [Message]
 }
 ```
@@ -75,9 +75,9 @@
 ```json
 {
   "id": ObjectId,
-  "author": ObjectId (UserId),
+  "author": ObjectId (ref: User),
   "content": string,
-  "timestamp": ISODate(),
+  "timestamp": ISODate,
   "edited": boolean,
   "deleted": boolean
 }
@@ -96,7 +96,7 @@
 - `GET /users/me` — Get current user info
 - `PATCH /users/{user_id}` — Update user status
 
-## Private Chat
+## PrivateChat
 
 - `POST /private_chats/` — Start a private chat
 - `GET /private_chats/{chat_id}` — Get private chat history
@@ -104,7 +104,7 @@
 - `PATCH /private_chats/{chat_id}/messages/{message_id}` — Edit private chat message
 - `DELETE /private_chats/{chat_id}/messages/{message_id}` — Delete private chat message
 
-## Group Chat
+## GroupChat
 
 - `POST /groups/` — Create group
 - `GET /groups/` — Get list of groups

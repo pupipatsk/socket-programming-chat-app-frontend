@@ -1,86 +1,130 @@
-import type { User, Group, Message } from "@/types"
+// src/lib/mock-api.ts
+import type { User, GroupChat, Message, PrivateChat } from "@/types"
+import { generateId } from "@/lib/utils"
 
 // Mock data
 let users: User[] = [
-  { id: "1", username: "Alice", status: "online" },
-  { id: "2", username: "Bob", status: "online" },
-  { id: "3", username: "Charlie", status: "online" },
-  { id: "4", username: "Diana", status: "online" },
+  { id: "1", username: "Alice", email: "alice@example.com", status: "online" },
+  { id: "2", username: "Bob", email: "bob@example.com", status: "online" },
+  {
+    id: "3",
+    username: "Charlie",
+    email: "charlie@example.com",
+    status: "offline",
+  },
+  { id: "4", username: "Diana", email: "diana@example.com", status: "offline" },
+  { id: "5", username: "Eva", email: "eva@example.com", status: "online" },
+  { id: "6", username: "Frank", email: "frank@example.com", status: "offline" },
+  { id: "7", username: "Grace", email: "grace@example.com", status: "online" },
+  { id: "8", username: "Henry", email: "henry@example.com", status: "offline" },
 ]
 
-let groups: Group[] = [
-  { id: "g1", name: "General", members: ["1", "2", "3"], createdBy: "1" },
-  { id: "g2", name: "Development", members: ["1", "3"], createdBy: "3" },
+let groups: GroupChat[] = [
+  {
+    id: "g1",
+    name: "General",
+    members: ["1", "2", "3"],
+    creator: "1",
+    messages: [
+      {
+        id: "m4",
+        content: "Welcome everyone to the General group!",
+        author: "1",
+        timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+        edited: false,
+        deleted: false,
+      },
+      {
+        id: "m5",
+        content: "Thanks for creating this group",
+        author: "2",
+        timestamp: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
+        edited: false,
+        deleted: false,
+      },
+    ],
+  },
+  {
+    id: "g2",
+    name: "Development",
+    members: ["1", "3"],
+    creator: "3",
+    messages: [
+      {
+        id: "m6",
+        content: "Let's discuss the new features",
+        author: "3",
+        timestamp: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+        edited: false,
+        deleted: false,
+      },
+    ],
+  },
 ]
 
-const messages: Record<string, Message[]> = {
-  // Private messages
-  user_1_2: [
-    {
-      id: "m1",
-      content: "Hey Bob, how are you?",
-      from: "1",
-      to: "2",
-      timestamp: new Date().toISOString(),
-      type: "private",
-    },
-    {
-      id: "m2",
-      content: "I'm good, thanks! How about you?",
-      from: "2",
-      to: "1",
-      timestamp: new Date().toISOString(),
-      type: "private",
-    },
-  ],
-  user_1_3: [
-    {
-      id: "m3",
-      content: "Hi Charlie, did you finish the report?",
-      from: "1",
-      to: "3",
-      timestamp: new Date().toISOString(),
-      type: "private",
-    },
-  ],
-  // Group messages
-  group_g1: [
-    {
-      id: "m4",
-      content: "Welcome everyone to the General group!",
-      from: "1",
-      to: "g1",
-      timestamp: new Date().toISOString(),
-      type: "group",
-    },
-    {
-      id: "m5",
-      content: "Thanks for creating this group",
-      from: "2",
-      to: "g1",
-      timestamp: new Date().toISOString(),
-      type: "group",
-    },
-  ],
-  group_g2: [
-    {
-      id: "m6",
-      content: "Let's discuss the new features",
-      from: "3",
-      to: "g2",
-      timestamp: new Date().toISOString(),
-      type: "group",
-    },
-  ],
-}
+const privateChats: PrivateChat[] = [
+  {
+    id: "pc1",
+    members: ["1", "2"],
+    messages: [
+      {
+        id: "m1",
+        content: "Hey Bob, how are you?",
+        author: "1",
+        timestamp: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+        edited: false,
+        deleted: false,
+      },
+      {
+        id: "m2",
+        content: "I'm good, thanks! How about you?",
+        author: "2",
+        timestamp: new Date(Date.now() - 7000000).toISOString(), // A bit less than 2 hours ago
+        edited: false,
+        deleted: false,
+      },
+    ],
+  },
+  {
+    id: "pc2",
+    members: ["1", "3"],
+    messages: [
+      {
+        id: "m3",
+        content: "Hi Charlie, did you finish the report?",
+        author: "1",
+        timestamp: new Date(Date.now() - 5400000).toISOString(), // 1.5 hours ago
+        edited: false,
+        deleted: false,
+      },
+    ],
+  },
+]
 
 // Helper functions
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-const generateId = () => Math.random().toString(36).substring(2, 9)
+
+// Find or create private chat between two users
+const findOrCreatePrivateChat = (userId1: string, userId2: string): PrivateChat => {
+  const existingChat = privateChats.find(
+    (chat) => chat.members.includes(userId1) && chat.members.includes(userId2) && chat.members.length === 2,
+  )
+
+  if (existingChat) return existingChat
+
+  const newChat: PrivateChat = {
+    id: `pc${generateId()}`,
+    members: [userId1, userId2],
+    messages: [],
+  }
+
+  privateChats.push(newChat)
+  return newChat
+}
 
 // Mock API functions
 export const mockApi = {
-  // User related
+  // User related functions
   getCurrentUser: async (userId: string): Promise<User> => {
     await delay(300)
     const user = users.find((u) => u.id === userId)
@@ -88,105 +132,226 @@ export const mockApi = {
     return user
   },
 
+  getAllUsers: async (): Promise<User[]> => {
+    await delay(500)
+    return [...users].sort((a, b) => {
+      // Sort by status (online first)
+      if (a.status !== b.status) {
+        return a.status === "online" ? -1 : 1
+      }
+      // Then sort alphabetically by username
+      return a.username.localeCompare(b.username)
+    })
+  },
+
   getActiveUsers: async (): Promise<User[]> => {
     await delay(500)
-    return users.filter((u) => u.status === "online")
+    return users.filter((u) => u.status === "online").sort((a, b) => a.username.localeCompare(b.username))
   },
 
-  // Group related
-  getGroups: async (): Promise<Group[]> => {
+  toggleUserStatus: async (userId: string): Promise<User> => {
+    await delay(300)
+    const userIndex = users.findIndex((u) => u.id === userId)
+    if (userIndex === -1) throw new Error("User not found")
+
+    users[userIndex].status = users[userIndex].status === "online" ? "offline" : "online"
+    return users[userIndex]
+  },
+
+  // Group related functions
+  getGroups: async (): Promise<GroupChat[]> => {
     await delay(500)
-    return groups
+    return groups.sort((a, b) => a.name.localeCompare(b.name))
   },
 
-  createGroup: async (name: string, creatorId: string): Promise<Group> => {
+  getGroupById: async (groupId: string): Promise<GroupChat> => {
+    await delay(300)
+    const group = groups.find((g) => g.id === groupId)
+    if (!group) throw new Error("Group not found")
+    return group
+  },
+
+  createGroup: async (name: string, creatorId: string): Promise<GroupChat> => {
     await delay(700)
-    const newGroup: Group = {
+    const newGroup: GroupChat = {
       id: `g${generateId()}`,
       name,
+      creator: creatorId,
       members: [creatorId],
-      createdBy: creatorId,
+      messages: [],
     }
     groups = [...groups, newGroup]
-    messages[`group_${newGroup.id}`] = []
     return newGroup
   },
 
-  joinGroup: async (groupId: string, userId: string): Promise<Group> => {
+  joinGroup: async (groupId: string, userId: string): Promise<GroupChat> => {
     await delay(500)
     const groupIndex = groups.findIndex((g) => g.id === groupId)
     if (groupIndex === -1) throw new Error("Group not found")
 
-    // Only add user if not already a member
-    if (!groups[groupIndex].members?.includes(userId)) {
-      groups[groupIndex] = {
-        ...groups[groupIndex],
-        members: [...(groups[groupIndex].members || []), userId],
-      }
+    if (!groups[groupIndex].members.includes(userId)) {
+      groups[groupIndex].members.push(userId)
     }
 
     return groups[groupIndex]
   },
 
-  // Message related
+  addMemberToGroup: async (groupId: string, userId: string): Promise<GroupChat> => {
+    await delay(500)
+    const groupIndex = groups.findIndex((g) => g.id === groupId)
+    if (groupIndex === -1) throw new Error("Group not found")
+
+    const userExists = users.some((u) => u.id === userId)
+    if (!userExists) throw new Error("User not found")
+
+    if (!groups[groupIndex].members.includes(userId)) {
+      groups[groupIndex].members.push(userId)
+    }
+
+    return groups[groupIndex]
+  },
+
+  getGroupMembers: async (groupId: string): Promise<User[]> => {
+    await delay(500)
+    const group = groups.find((g) => g.id === groupId)
+    if (!group) throw new Error("Group not found")
+
+    return users
+      .filter((user) => group.members.includes(user.id))
+      .sort((a, b) => {
+        // Sort by status (online first)
+        if (a.status !== b.status) {
+          return a.status === "online" ? -1 : 1
+        }
+        // Then sort alphabetically by username
+        return a.username.localeCompare(b.username)
+      })
+  },
+
+  // Chat related functions
+  getPrivateChat: async (userId1: string, userId2: string): Promise<PrivateChat> => {
+    await delay(600)
+    return findOrCreatePrivateChat(userId1, userId2)
+  },
+
   getPrivateMessages: async (userId1: string, userId2: string): Promise<Message[]> => {
     await delay(600)
-    const chatId = userId1 < userId2 ? `user_${userId1}_${userId2}` : `user_${userId2}_${userId1}`
-    return messages[chatId] || []
+    const chat = findOrCreatePrivateChat(userId1, userId2)
+    return [...chat.messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
   },
 
   getGroupMessages: async (groupId: string): Promise<Message[]> => {
     await delay(600)
-    return messages[`group_${groupId}`] || []
+    const group = groups.find((g) => g.id === groupId)
+    if (!group) return []
+    return [...group.messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
   },
 
-  sendPrivateMessage: async (message: Omit<Message, "id">): Promise<Message> => {
+  sendPrivateMessage: async (author: string, to: string, content: string): Promise<Message> => {
     await delay(400)
     const newMessage: Message = {
-      ...message,
       id: `m${generateId()}`,
+      author,
+      content,
       timestamp: new Date().toISOString(),
-      type: "private",
+      edited: false,
+      deleted: false,
     }
 
-    const fromId = message.from
-    const toId = message.to
-    const chatId = fromId < toId ? `user_${fromId}_${toId}` : `user_${toId}_${fromId}`
+    const chat = findOrCreatePrivateChat(author, to)
+    chat.messages.push(newMessage)
 
-    if (!messages[chatId]) {
-      messages[chatId] = []
-    }
-
-    messages[chatId] = [...messages[chatId], newMessage]
     return newMessage
   },
 
-  sendGroupMessage: async (message: Omit<Message, "id">): Promise<Message> => {
+  sendGroupMessage: async (groupId: string, author: string, content: string): Promise<Message> => {
     await delay(400)
     const newMessage: Message = {
-      ...message,
       id: `m${generateId()}`,
+      author,
+      content,
       timestamp: new Date().toISOString(),
-      type: "group",
+      edited: false,
+      deleted: false,
     }
 
-    const groupId = message.to
-    const chatId = `group_${groupId}`
+    const groupIndex = groups.findIndex((g) => g.id === groupId)
+    if (groupIndex === -1) throw new Error("Group not found")
 
-    if (!messages[chatId]) {
-      messages[chatId] = []
+    // Check if user is a member of the group
+    if (!groups[groupIndex].members.includes(author)) {
+      throw new Error("User is not a member of this group")
     }
 
-    messages[chatId] = [...messages[chatId], newMessage]
+    groups[groupIndex].messages.push(newMessage)
     return newMessage
   },
 
-  // Add a user to the system (for login/register simulation)
-  addUser: async (username: string): Promise<User> => {
+  editMessage: async (
+    chatType: "private" | "group",
+    chatId: string,
+    messageId: string,
+    newContent: string,
+  ): Promise<Message> => {
+    await delay(400)
+
+    if (chatType === "private") {
+      const chatIndex = privateChats.findIndex((chat) => chat.id === chatId)
+      if (chatIndex === -1) throw new Error("Chat not found")
+
+      const messageIndex = privateChats[chatIndex].messages.findIndex((msg) => msg.id === messageId)
+      if (messageIndex === -1) throw new Error("Message not found")
+
+      privateChats[chatIndex].messages[messageIndex].content = newContent
+      privateChats[chatIndex].messages[messageIndex].edited = true
+
+      return privateChats[chatIndex].messages[messageIndex]
+    } else {
+      const groupIndex = groups.findIndex((g) => g.id === chatId)
+      if (groupIndex === -1) throw new Error("Group not found")
+
+      const messageIndex = groups[groupIndex].messages.findIndex((msg) => msg.id === messageId)
+      if (messageIndex === -1) throw new Error("Message not found")
+
+      groups[groupIndex].messages[messageIndex].content = newContent
+      groups[groupIndex].messages[messageIndex].edited = true
+
+      return groups[groupIndex].messages[messageIndex]
+    }
+  },
+
+  deleteMessage: async (chatType: "private" | "group", chatId: string, messageId: string): Promise<Message> => {
+    await delay(400)
+
+    if (chatType === "private") {
+      const chatIndex = privateChats.findIndex((chat) => chat.id === chatId)
+      if (chatIndex === -1) throw new Error("Chat not found")
+
+      const messageIndex = privateChats[chatIndex].messages.findIndex((msg) => msg.id === messageId)
+      if (messageIndex === -1) throw new Error("Message not found")
+
+      privateChats[chatIndex].messages[messageIndex].deleted = true
+
+      return privateChats[chatIndex].messages[messageIndex]
+    } else {
+      const groupIndex = groups.findIndex((g) => g.id === chatId)
+      if (groupIndex === -1) throw new Error("Group not found")
+
+      const messageIndex = groups[groupIndex].messages.findIndex((msg) => msg.id === messageId)
+      if (messageIndex === -1) throw new Error("Message not found")
+
+      groups[groupIndex].messages[messageIndex].deleted = true
+
+      return groups[groupIndex].messages[messageIndex]
+    }
+  },
+
+  addUser: async (username: string, email: string): Promise<User> => {
     await delay(500)
     const newUser: User = {
       id: generateId(),
       username,
+      email,
       status: "online",
     }
     users = [...users, newUser]

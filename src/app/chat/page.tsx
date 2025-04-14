@@ -1,133 +1,153 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ChatLayout } from "@/components/chat-layout"
 import { ChatWindow } from "@/components/chat-window"
 import { UserList } from "@/components/user-list"
 import { GroupList } from "@/components/group-list"
 import { ChatInput } from "@/components/chat-input"
-import { mockApi } from "@/lib/mock-api"
-import type { User, Group, Message } from "@/types"
+import { GroupDetails } from "@/components/group-details"
+import { useAuth } from "@/contexts/auth-context"
+import { ChatProvider, useChat } from "@/contexts/chat-context"
+import { useMediaQuery } from "@/hooks/use-media-query"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft } from "lucide-react"
+import { useState } from "react"
+
+function ChatPageContent() {
+  const { user, logout } = useAuth()
+  const {
+    users,
+    groups,
+    activeChat,
+    messages,
+    isLoading,
+    isSending,
+    setActiveChat,
+    sendMessage,
+    editMessage,
+    deleteMessage,
+    createGroup,
+    joinGroup,
+    addMemberToGroup,
+    getGroupById,
+    getGroupMembers,
+  } = useChat()
+
+  const [connectionStatus] = useState("Connected")
+  const [groupDetailsOpen, setGroupDetailsOpen] = useState(false)
+  const [selectedGroup, setSelectedGroup] = useState<any>(null)
+  const [showAddMembers, setShowAddMembers] = useState(false)
+
+  // Responsive state
+  const isMobile = useMediaQuery("(max-width: 768px)")
+  const [showSidebar, setShowSidebar] = useState(true)
+
+  useEffect(() => {
+    if (!isMobile) {
+      setShowSidebar(true)
+    }
+  }, [isMobile])
+
+  const handleViewGroupDetails = async (groupId: string, showAddMembersSection = false) => {
+    try {
+      const group = await getGroupById(groupId)
+      if (group) {
+        setSelectedGroup(group)
+        setShowAddMembers(showAddMembersSection)
+        setGroupDetailsOpen(true)
+      }
+    } catch (error) {
+      console.error("Error fetching group details:", error)
+    }
+  }
+
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar)
+  }
+
+  if (!user) return null
+
+  return (
+    <ChatLayout user={user} onLogout={logout} connectionStatus={connectionStatus}>
+      <div className="flex h-full relative">
+        {/* Sidebar */}
+        <div
+          className={`${showSidebar ? "block" : "hidden"} ${
+            isMobile ? "absolute z-10 w-full md:w-64 h-full" : "w-64"
+          } border-r border-black/5 p-4 space-y-6 glass`}
+        >
+          <UserList
+            users={users}
+            currentUser={user}
+            onSelectUser={(userId) => {
+              setActiveChat({ type: "private_chat", id: userId })
+              if (isMobile) setShowSidebar(false)
+            }}
+            activeChat={activeChat}
+          />
+          <GroupList
+            groups={groups}
+            onSelectGroup={(groupId) => {
+              setActiveChat({ type: "group", id: groupId })
+              if (isMobile) setShowSidebar(false)
+            }}
+            onCreateGroup={createGroup}
+            onJoinGroup={joinGroup}
+            onViewGroupDetails={handleViewGroupDetails}
+            currentUserId={user.id}
+            activeChat={activeChat}
+          />
+        </div>
+
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col">
+          {isMobile && activeChat && !showSidebar && (
+            <div className="p-2 border-b border-black/10">
+              <Button variant="ghost" size="sm" onClick={toggleSidebar} className="flex items-center">
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            </div>
+          )}
+
+          <ChatWindow
+            messages={messages}
+            currentUser={user}
+            activeChat={activeChat}
+            users={users}
+            groups={groups}
+            isLoading={isLoading}
+            onEditMessage={editMessage}
+            onDeleteMessage={deleteMessage}
+          />
+          <ChatInput onSendMessage={sendMessage} disabled={isSending || !activeChat} />
+        </div>
+      </div>
+
+      <GroupDetails
+        open={groupDetailsOpen}
+        onOpenChange={setGroupDetailsOpen}
+        group={selectedGroup}
+        currentUser={user}
+        allUsers={users}
+        onAddMember={addMemberToGroup}
+        showAddMembersSection={showAddMembers}
+      />
+    </ChatLayout>
+  )
+}
 
 export default function ChatPage() {
+  const { user } = useAuth()
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [users, setUsers] = useState<User[]>([])
-  const [groups, setGroups] = useState<Group[]>([])
-  const [activeChat, setActiveChat] = useState<{ type: "user" | "group"; id: string } | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
-  // Check if user is logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    if (!storedUser) {
+    if (!user) {
       router.push("/")
-      return
     }
-
-    const parsedUser = JSON.parse(storedUser)
-    setUser(parsedUser)
-
-    // Load initial data
-    const loadInitialData = async () => {
-      try {
-        const [activeUsers, allGroups] = await Promise.all([mockApi.getActiveUsers(), mockApi.getGroups()])
-
-        setUsers(activeUsers)
-        setGroups(allGroups)
-      } catch (error) {
-        console.error("Failed to load initial data:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadInitialData()
-  }, [router])
-
-  // Load messages when active chat changes
-  useEffect(() => {
-    if (!activeChat || !user) return
-
-    const loadMessages = async () => {
-      setIsLoading(true)
-      try {
-        let chatMessages: Message[] = []
-
-        if (activeChat.type === "user") {
-          chatMessages = await mockApi.getPrivateMessages(user.id, activeChat.id)
-        } else {
-          chatMessages = await mockApi.getGroupMessages(activeChat.id)
-        }
-
-        setMessages(chatMessages)
-      } catch (error) {
-        console.error("Error loading messages:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadMessages()
-  }, [activeChat, user])
-
-  const handleSendMessage = async (content: string) => {
-    if (!activeChat || !user) return
-
-    try {
-      const messageData = {
-        content,
-        from: user.id,
-        to: activeChat.id,
-        timestamp: new Date().toISOString(),
-        type: activeChat.type === "user" ? "private" : "group",
-      }
-
-      let newMessage: Message
-
-      if (activeChat.type === "user") {
-        newMessage = await mockApi.sendPrivateMessage(messageData)
-      } else {
-        newMessage = await mockApi.sendGroupMessage(messageData)
-      }
-
-      setMessages((prev) => [...prev, newMessage])
-    } catch (error) {
-      console.error("Error sending message:", error)
-    }
-  }
-
-  const handleCreateGroup = async (name: string) => {
-    if (!user) return
-
-    try {
-      const newGroup = await mockApi.createGroup(name, user.id)
-      setGroups((prev) => [...prev, newGroup])
-    } catch (error) {
-      console.error("Error creating group:", error)
-    }
-  }
-
-  const handleJoinGroup = async (groupId: string) => {
-    if (!user) return
-
-    try {
-      await mockApi.joinGroup(groupId, user.id)
-
-      // Refresh groups list
-      const updatedGroups = await mockApi.getGroups()
-      setGroups(updatedGroups)
-    } catch (error) {
-      console.error("Error joining group:", error)
-    }
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("user")
-    router.push("/")
-  }
+  }, [user, router])
 
   if (!user) {
     return (
@@ -138,35 +158,8 @@ export default function ChatPage() {
   }
 
   return (
-    <ChatLayout user={user} onLogout={handleLogout}>
-      <div className="flex h-full">
-        <div className="w-64 border-r border-black/5 p-4 space-y-6 glass">
-          <UserList
-            users={users}
-            currentUser={user}
-            onSelectUser={(userId) => setActiveChat({ type: "user", id: userId })}
-            activeChat={activeChat}
-          />
-          <GroupList
-            groups={groups}
-            onSelectGroup={(groupId) => setActiveChat({ type: "group", id: groupId })}
-            onCreateGroup={handleCreateGroup}
-            onJoinGroup={handleJoinGroup}
-            activeChat={activeChat}
-          />
-        </div>
-        <div className="flex-1 flex flex-col">
-          <ChatWindow
-            messages={messages}
-            currentUser={user}
-            activeChat={activeChat}
-            users={users}
-            groups={groups}
-            isLoading={isLoading}
-          />
-          <ChatInput onSendMessage={handleSendMessage} />
-        </div>
-      </div>
-    </ChatLayout>
+    <ChatProvider>
+      <ChatPageContent />
+    </ChatProvider>
   )
 }
