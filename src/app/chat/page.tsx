@@ -16,7 +16,7 @@ export default function ChatPage() {
   const [user, setUser] = useState<User | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [groups, setGroups] = useState<GroupChat[]>([])
-  const [activeChat, setActiveChat] = useState<{ type: "user" | "group"; id: string } | null>(null)
+  const [activeChat, setActiveChat] = useState<{ type: "private_chat" | "group"; id: string } | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [connectionStatus] = useState("Connected")
@@ -57,7 +57,7 @@ export default function ChatPage() {
       setIsLoading(true)
       try {
         const chatMessages =
-          activeChat.type === "user"
+          activeChat.type === "private_chat"
             ? await mockApi.getPrivateMessages(user.id, activeChat.id)
             : await mockApi.getGroupMessages(activeChat.id)
 
@@ -77,7 +77,7 @@ export default function ChatPage() {
 
     try {
       const newMessage =
-        activeChat.type === "user"
+        activeChat.type === "private_chat"
           ? await mockApi.sendPrivateMessage(user.id, activeChat.id, content)
           : await mockApi.sendGroupMessage(activeChat.id, user.id, content)
 
@@ -130,7 +130,7 @@ export default function ChatPage() {
           <UserList
             users={users}
             currentUser={user}
-            onSelectUser={(userId) => setActiveChat({ type: "user", id: userId })}
+            onSelectUser={(userId) => setActiveChat({ type: "private_chat", id: userId })}
             activeChat={activeChat}
           />
           <GroupList

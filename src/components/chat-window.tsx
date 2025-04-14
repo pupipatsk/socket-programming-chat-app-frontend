@@ -8,7 +8,7 @@ import type { Message, User, GroupChat } from "@/types";
 interface ChatWindowProps {
   messages: Message[];
   currentUser: User;
-  activeChat: { type: "user" | "group"; id: string } | null;
+  activeChat: { type: "private_chat" | "group"; id: string } | null;
   users: User[];
   groups: GroupChat[];
   isLoading: boolean;
@@ -33,7 +33,7 @@ export function ChatWindow({
   const getActiveChatName = () => {
     if (!activeChat) return "Select a chat";
 
-    if (activeChat.type === "user") {
+    if (activeChat.type === "private_chat") {
       const user = users.find((u) => u.id === activeChat.id);
       return user ? user.username : "Unknown user";
     } else {

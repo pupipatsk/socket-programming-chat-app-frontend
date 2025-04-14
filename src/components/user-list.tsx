@@ -9,7 +9,7 @@ interface UserListProps {
   users: User[]
   currentUser: User
   onSelectUser: (userId: string) => void
-  activeChat: { type: "user" | "group"; id: string } | null
+  activeChat: { type: "private_chat" | "group"; id: string } | null
 }
 
 export function UserList({ users, currentUser, onSelectUser, activeChat }: UserListProps) {
@@ -32,7 +32,7 @@ export function UserList({ users, currentUser, onSelectUser, activeChat }: UserL
                 key={user.id}
                 variant="ghost"
                 className={`w-full justify-start mb-1 ${
-                  activeChat?.type === "user" && activeChat.id === user.id ? "bg-black/10" : ""
+                  activeChat?.type === "private_chat" && activeChat.id === user.id ? "bg-black/10" : ""
                 } hover:bg-black/5`}
                 onClick={() => onSelectUser(user.id)}
               >

@@ -22,7 +22,7 @@ interface GroupListProps {
   onSelectGroup: (groupId: string) => void;
   onCreateGroup: (name: string) => void;
   onJoinGroup: (groupId: string) => void;
-  activeChat: { type: "user" | "group"; id: string } | null;
+  activeChat: { type: "private_chat" | "group"; id: string } | null;
 }
 
 export function GroupList({
