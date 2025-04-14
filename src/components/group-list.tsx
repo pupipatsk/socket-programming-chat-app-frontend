@@ -1,35 +1,48 @@
-"use client"
+// src/app/chat/page.tsx
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import type { GroupChat } from "@/types"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Users, Plus, UserPlus } from "lucide-react"
+import { useState } from "react";
+import type { GroupChat } from "@/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Users, Plus, UserPlus } from "lucide-react";
 
 interface GroupListProps {
-  groups: GroupChat[]
-  onSelectGroup: (groupId: string) => void
-  onCreateGroup: (name: string) => void
-  onJoinGroup: (groupId: string) => void
-  activeChat: { type: "user" | "group"; id: string } | null
+  groups: GroupChat[];
+  onSelectGroup: (groupId: string) => void;
+  onCreateGroup: (name: string) => void;
+  onJoinGroup: (groupId: string) => void;
+  activeChat: { type: "user" | "group"; id: string } | null;
 }
 
-export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, activeChat }: GroupListProps) {
-  const [newGroupName, setNewGroupName] = useState("")
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+export function GroupList({
+  groups,
+  onSelectGroup,
+  onCreateGroup,
+  onJoinGroup,
+  activeChat,
+}: GroupListProps) {
+  const [newGroupName, setNewGroupName] = useState("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const handleCreateGroup = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (newGroupName.trim()) {
-      onCreateGroup(newGroupName.trim())
-      setNewGroupName("")
-      setCreateDialogOpen(false)
+      onCreateGroup(newGroupName.trim());
+      setNewGroupName("");
+      setCreateDialogOpen(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-2">
@@ -42,12 +55,16 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
 
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-black/5"
+            >
               <Plus className="h-4 w-4" />
               <span className="sr-only">Create Group</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="glass-card">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Group</DialogTitle>
             </DialogHeader>
@@ -58,7 +75,10 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
                 onChange={(e) => setNewGroupName(e.target.value)}
                 className="glass-input"
               />
-              <Button type="submit" className="w-full bg-black text-white hover:bg-black/90">
+              <Button
+                type="submit"
+                className="w-full bg-black text-white hover:bg-black/90"
+              >
                 Create Group
               </Button>
             </form>
@@ -74,12 +94,16 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
                 <Button
                   variant="ghost"
                   className={`flex-1 justify-start ${
-                    activeChat?.type === "group" && activeChat.id === group.id ? "bg-black/10" : ""
+                    activeChat?.type === "group" && activeChat.id === group.id
+                      ? "bg-black/10"
+                      : ""
                   } hover:bg-black/5`}
                   onClick={() => onSelectGroup(group.id)}
                 >
                   <span className="truncate">{group.name}</span>
-                  <span className="ml-2 text-xs text-black/60">({group.members?.length || 0})</span>
+                  <span className="ml-2 text-xs text-black/60">
+                    ({group.members?.length || 0})
+                  </span>
                 </Button>
                 <Button
                   variant="ghost"
@@ -93,10 +117,12 @@ export function GroupList({ groups, onSelectGroup, onCreateGroup, onJoinGroup, a
               </div>
             ))
           ) : (
-            <div className="text-center py-4 text-black/40">No groups available</div>
+            <div className="text-center py-4 text-black/40">
+              No groups available
+            </div>
           )}
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }
