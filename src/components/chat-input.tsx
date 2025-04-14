@@ -9,14 +9,15 @@ import { Send } from "lucide-react"
 
 interface ChatInputProps {
   onSendMessage: (content: string) => void
+  disabled?: boolean
 }
 
-export function ChatInput({ onSendMessage }: ChatInputProps) {
+export function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
   const [message, setMessage] = useState("")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (message.trim()) {
+    if (message.trim() && !disabled) {
       onSendMessage(message.trim())
       setMessage("")
     }
@@ -39,8 +40,14 @@ export function ChatInput({ onSendMessage }: ChatInputProps) {
           placeholder="Type your message..."
           className="resize-none glass-input"
           rows={2}
+          disabled={disabled}
         />
-        <Button type="submit" size="icon" className="h-10 w-10 bg-black text-white hover:bg-black/90">
+        <Button
+          type="submit"
+          size="icon"
+          className="h-10 w-10 bg-black text-white hover:bg-black/90"
+          disabled={disabled || !message.trim()}
+        >
           <Send className="h-5 w-5" />
           <span className="sr-only">Send</span>
         </Button>

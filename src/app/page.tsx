@@ -1,89 +1,76 @@
 // src/app/page.tsx
-"use client";
+"use client"
 
-import type React from "react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import { mockApi } from "@/lib/mock-api";
+import type React from "react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { mockApi } from "@/lib/mock-api"
 
 export default function HomePage() {
-  const [isLogin, setIsLogin] = useState(true);
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLogin, setIsLogin] = useState(true)
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     confirmPassword: "",
-  });
+  })
 
-  const toggleMode = () => setIsLogin(!isLogin);
+  const toggleMode = () => setIsLogin(!isLogin)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+    e.preventDefault()
+    setIsLoading(true)
 
     if (!isLogin && formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match");
-      setIsLoading(false);
-      return;
+      alert("Passwords don't match")
+      setIsLoading(false)
+      return
     }
 
     try {
       if (isLogin) {
-        const users = await mockApi.getActiveUsers();
-        const user = users.find((u) => u.username === formData.username);
+        const users = await mockApi.getActiveUsers()
+        const user = users.find((u) => u.username === formData.username)
 
-        if (!user) throw new Error("User not found");
+        if (!user) throw new Error("User not found")
 
-        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user", JSON.stringify(user))
       } else {
-        const newUser = await mockApi.addUser(
-          formData.username,
-          `${formData.username}@example.com`
-        );
-        localStorage.setItem("user", JSON.stringify(newUser));
+        const newUser = await mockApi.addUser(formData.username, `${formData.username}@example.com`)
+        localStorage.setItem("user", JSON.stringify(newUser))
       }
 
-      router.push("/chat");
+      router.push("/chat")
     } catch (error) {
-      console.error("Auth failed:", error);
-      alert("Authentication failed. Please try again.");
+      console.error("Auth failed:", error)
+      alert("Authentication failed. Please try again.")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleGuestLogin = async () => {
     try {
-      setIsLoading(true);
-      const guestName = `Guest-${Math.floor(1000 + Math.random() * 9000)}`;
-      const guestUser = await mockApi.addUser(
-        guestName,
-        `${guestName}@guest.io`
-      );
-      localStorage.setItem("user", JSON.stringify(guestUser));
-      router.push("/chat");
+      setIsLoading(true)
+      const guestName = `Guest-${Math.floor(1000 + Math.random() * 9000)}`
+      const guestUser = await mockApi.addUser(guestName, `${guestName}@guest.io`)
+      localStorage.setItem("user", JSON.stringify(guestUser))
+      router.push("/chat")
     } catch (error) {
-      console.error("Guest login failed:", error);
+      console.error("Guest login failed:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <main className="flex min-h-screen bg-gradient-light">
@@ -98,13 +85,9 @@ export default function HomePage() {
       <div className="w-full md:w-1/2 flex items-center justify-center p-4">
         <Card className="w-full max-w-md glass-card animate-fade-in">
           <CardHeader>
-            <CardTitle className="text-2xl font-light">
-              {isLogin ? "Login" : "Create Account"}
-            </CardTitle>
+            <CardTitle className="text-2xl font-light">{isLogin ? "Login" : "Create Account"}</CardTitle>
             <CardDescription>
-              {isLogin
-                ? "Enter your credentials to continue"
-                : "Sign up to join the conversation"}
+              {isLogin ? "Enter your credentials to continue" : "Sign up to join the conversation"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -150,13 +133,7 @@ export default function HomePage() {
                 </div>
               )}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading
-                  ? isLogin
-                    ? "Logging in..."
-                    : "Creating account..."
-                  : isLogin
-                  ? "Login"
-                  : "Register"}
+                {isLoading ? (isLogin ? "Logging in..." : "Creating account...") : isLogin ? "Login" : "Register"}
               </Button>
               <Button
                 type="button"
@@ -172,10 +149,7 @@ export default function HomePage() {
           <CardFooter className="flex justify-center">
             <p className="text-sm text-black/60">
               {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-              <button
-                onClick={toggleMode}
-                className="text-black font-medium hover:underline ml-1"
-              >
+              <button onClick={toggleMode} className="text-black font-medium hover:underline ml-1">
                 {isLogin ? "Register" : "Login"}
               </button>
             </p>
@@ -183,5 +157,5 @@ export default function HomePage() {
         </Card>
       </div>
     </main>
-  );
+  )
 }
