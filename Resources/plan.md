@@ -12,7 +12,7 @@
 ## Requirements
 - Min: 2 client, 1 server
 - Set client name
-- Lis of active users
+- List of active users
 - Chat box + chat window
 - Private/Direct messages (only sender & receiver see)
 - Create chat groups
