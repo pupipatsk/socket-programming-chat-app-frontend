@@ -21,7 +21,6 @@ export function UserList({
   onSelectUser,
   activeChat,
 }: UserListProps) {
-  // Filter out current user from the list
   const filteredUsers = useMemo(
     () => users.filter((user) => user.id !== currentUser.id),
     [users, currentUser.id]
@@ -37,122 +36,64 @@ export function UserList({
     [filteredUsers]
   );
 
+  const renderUserList = (list: User[], emptyMessage: string) => (
+    <ScrollArea className="h-48 rounded-md border border-black/10 bg-white/5">
+      <div className="p-2">
+        {list.length > 0 ? (
+          list.map((user) => (
+            <Button
+              key={user.id}
+              variant="ghost"
+              className={`w-full justify-start mb-1 ${
+                activeChat?.type === "private_chat" && activeChat.id === user.id
+                  ? "bg-black/10"
+                  : ""
+              } hover:bg-black/5`}
+              onClick={() => onSelectUser(user.id)}
+            >
+              <div className="flex items-center">
+                <div
+                  className={`h-2 w-2 rounded-full mr-2 ${
+                    user.status === "online" ? "bg-green-500" : "bg-gray-400"
+                  }`}
+                />
+                <span className="truncate">{user.username}</span>
+              </div>
+            </Button>
+          ))
+        ) : (
+          <div className="text-center py-4 text-black/40">{emptyMessage}</div>
+        )}
+      </div>
+    </ScrollArea>
+  );
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center space-x-2">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
         <Users className="h-5 w-5 text-black/60" />
         <h2 className="text-lg font-semibold">Users</h2>
-        <div className="text-sm text-black/60">({filteredUsers.length})</div>
+        <span className="text-sm text-black/60">({filteredUsers.length})</span>
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">All ({filteredUsers.length})</TabsTrigger>
+        <TabsList className="flex flex-wrap gap-1 w-full h-full">
           <TabsTrigger value="online">
             Online ({onlineUsers.length})
           </TabsTrigger>
           <TabsTrigger value="offline">
             Offline ({offlineUsers.length})
           </TabsTrigger>
+          <TabsTrigger value="all">All ({filteredUsers.length})</TabsTrigger>
         </TabsList>
-
         <TabsContent value="all">
-          <ScrollArea className="h-48 rounded-md border border-black/10 bg-white/5">
-            <div className="p-2">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <Button
-                    key={user.id}
-                    variant="ghost"
-                    className={`w-full justify-start mb-1 ${
-                      activeChat?.type === "private_chat" &&
-                      activeChat.id === user.id
-                        ? "bg-black/10"
-                        : ""
-                    } hover:bg-black/5`}
-                    onClick={() => onSelectUser(user.id)}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className={`h-2 w-2 rounded-full ${
-                          user.status === "online"
-                            ? "bg-green-500"
-                            : "bg-gray-400"
-                        } mr-2`}
-                      />
-                      <span className="truncate">{user.username}</span>
-                    </div>
-                  </Button>
-                ))
-              ) : (
-                <div className="text-center py-4 text-black/40">
-                  No users available
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+          {renderUserList(filteredUsers, "No users available")}
         </TabsContent>
-
         <TabsContent value="online">
-          <ScrollArea className="h-48 rounded-md border border-black/10 bg-white/5">
-            <div className="p-2">
-              {onlineUsers.length > 0 ? (
-                onlineUsers.map((user) => (
-                  <Button
-                    key={user.id}
-                    variant="ghost"
-                    className={`w-full justify-start mb-1 ${
-                      activeChat?.type === "private_chat" &&
-                      activeChat.id === user.id
-                        ? "bg-black/10"
-                        : ""
-                    } hover:bg-black/5`}
-                    onClick={() => onSelectUser(user.id)}
-                  >
-                    <div className="flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-green-500 mr-2" />
-                      <span className="truncate">{user.username}</span>
-                    </div>
-                  </Button>
-                ))
-              ) : (
-                <div className="text-center py-4 text-black/40">
-                  No users online
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+          {renderUserList(onlineUsers, "No users online")}
         </TabsContent>
-
         <TabsContent value="offline">
-          <ScrollArea className="h-48 rounded-md border border-black/10 bg-white/5">
-            <div className="p-2">
-              {offlineUsers.length > 0 ? (
-                offlineUsers.map((user) => (
-                  <Button
-                    key={user.id}
-                    variant="ghost"
-                    className={`w-full justify-start mb-1 ${
-                      activeChat?.type === "private_chat" &&
-                      activeChat.id === user.id
-                        ? "bg-black/10"
-                        : ""
-                    } hover:bg-black/5`}
-                    onClick={() => onSelectUser(user.id)}
-                  >
-                    <div className="flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-gray-400 mr-2" />
-                      <span className="truncate">{user.username}</span>
-                    </div>
-                  </Button>
-                ))
-              ) : (
-                <div className="text-center py-4 text-black/40">
-                  No users offline
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+          {renderUserList(offlineUsers, "No users offline")}
         </TabsContent>
       </Tabs>
     </div>
