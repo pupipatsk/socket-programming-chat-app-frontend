@@ -1,5 +1,6 @@
 // src/lib/mock-api.ts
-import type { User, GroupChat, Message, PrivateChat } from "@/types";
+import type { User, GroupChat, Message, PrivateChat } from "@/types"
+import { generateId } from "@/lib/utils"
 
 // Mock data
 let users: User[] = [
@@ -16,7 +17,7 @@ let users: User[] = [
   { id: "6", username: "Frank", email: "frank@example.com", status: "offline" },
   { id: "7", username: "Grace", email: "grace@example.com", status: "online" },
   { id: "8", username: "Henry", email: "henry@example.com", status: "offline" },
-];
+]
 
 let groups: GroupChat[] = [
   {
@@ -59,7 +60,7 @@ let groups: GroupChat[] = [
       },
     ],
   },
-];
+]
 
 const privateChats: PrivateChat[] = [
   {
@@ -98,185 +99,156 @@ const privateChats: PrivateChat[] = [
       },
     ],
   },
-];
+]
 
 // Helper functions
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const generateId = () => Math.random().toString(36).substring(2, 9);
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Find or create private chat between two users
-const findOrCreatePrivateChat = (
-  userId1: string,
-  userId2: string
-): PrivateChat => {
+const findOrCreatePrivateChat = (userId1: string, userId2: string): PrivateChat => {
   const existingChat = privateChats.find(
-    (chat) =>
-      chat.members.includes(userId1) &&
-      chat.members.includes(userId2) &&
-      chat.members.length === 2
-  );
+    (chat) => chat.members.includes(userId1) && chat.members.includes(userId2) && chat.members.length === 2,
+  )
 
-  if (existingChat) return existingChat;
+  if (existingChat) return existingChat
 
   const newChat: PrivateChat = {
     id: `pc${generateId()}`,
     members: [userId1, userId2],
     messages: [],
-  };
+  }
 
-  privateChats.push(newChat);
-  return newChat;
-};
+  privateChats.push(newChat)
+  return newChat
+}
 
 // Mock API functions
 export const mockApi = {
   // User related functions
   getCurrentUser: async (userId: string): Promise<User> => {
-    await delay(300);
-    const user = users.find((u) => u.id === userId);
-    if (!user) throw new Error("User not found");
-    return user;
+    await delay(300)
+    const user = users.find((u) => u.id === userId)
+    if (!user) throw new Error("User not found")
+    return user
   },
 
   getAllUsers: async (): Promise<User[]> => {
-    await delay(500);
+    await delay(500)
     return [...users].sort((a, b) => {
       // Sort by status (online first)
       if (a.status !== b.status) {
-        return a.status === "online" ? -1 : 1;
+        return a.status === "online" ? -1 : 1
       }
       // Then sort alphabetically by username
-      return a.username.localeCompare(b.username);
-    });
+      return a.username.localeCompare(b.username)
+    })
   },
 
   getActiveUsers: async (): Promise<User[]> => {
-    await delay(500);
-    return users
-      .filter((u) => u.status === "online")
-      .sort((a, b) => a.username.localeCompare(b.username));
+    await delay(500)
+    return users.filter((u) => u.status === "online").sort((a, b) => a.username.localeCompare(b.username))
   },
 
   toggleUserStatus: async (userId: string): Promise<User> => {
-    await delay(300);
-    const userIndex = users.findIndex((u) => u.id === userId);
-    if (userIndex === -1) throw new Error("User not found");
+    await delay(300)
+    const userIndex = users.findIndex((u) => u.id === userId)
+    if (userIndex === -1) throw new Error("User not found")
 
-    users[userIndex].status =
-      users[userIndex].status === "online" ? "offline" : "online";
-    return users[userIndex];
+    users[userIndex].status = users[userIndex].status === "online" ? "offline" : "online"
+    return users[userIndex]
   },
 
   // Group related functions
   getGroups: async (): Promise<GroupChat[]> => {
-    await delay(500);
-    return groups.sort((a, b) => a.name.localeCompare(b.name));
+    await delay(500)
+    return groups.sort((a, b) => a.name.localeCompare(b.name))
   },
 
   getGroupById: async (groupId: string): Promise<GroupChat> => {
-    await delay(300);
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) throw new Error("Group not found");
-    return group;
+    await delay(300)
+    const group = groups.find((g) => g.id === groupId)
+    if (!group) throw new Error("Group not found")
+    return group
   },
 
   createGroup: async (name: string, creatorId: string): Promise<GroupChat> => {
-    await delay(700);
+    await delay(700)
     const newGroup: GroupChat = {
       id: `g${generateId()}`,
       name,
       creator: creatorId,
       members: [creatorId],
       messages: [],
-    };
-    groups = [...groups, newGroup];
-    return newGroup;
+    }
+    groups = [...groups, newGroup]
+    return newGroup
   },
 
   joinGroup: async (groupId: string, userId: string): Promise<GroupChat> => {
-    await delay(500);
-    const groupIndex = groups.findIndex((g) => g.id === groupId);
-    if (groupIndex === -1) throw new Error("Group not found");
+    await delay(500)
+    const groupIndex = groups.findIndex((g) => g.id === groupId)
+    if (groupIndex === -1) throw new Error("Group not found")
 
     if (!groups[groupIndex].members.includes(userId)) {
-      groups[groupIndex].members.push(userId);
+      groups[groupIndex].members.push(userId)
     }
 
-    return groups[groupIndex];
+    return groups[groupIndex]
   },
 
-  addMemberToGroup: async (
-    groupId: string,
-    userId: string
-  ): Promise<GroupChat> => {
-    await delay(500);
-    const groupIndex = groups.findIndex((g) => g.id === groupId);
-    if (groupIndex === -1) throw new Error("Group not found");
+  addMemberToGroup: async (groupId: string, userId: string): Promise<GroupChat> => {
+    await delay(500)
+    const groupIndex = groups.findIndex((g) => g.id === groupId)
+    if (groupIndex === -1) throw new Error("Group not found")
 
-    const userExists = users.some((u) => u.id === userId);
-    if (!userExists) throw new Error("User not found");
+    const userExists = users.some((u) => u.id === userId)
+    if (!userExists) throw new Error("User not found")
 
     if (!groups[groupIndex].members.includes(userId)) {
-      groups[groupIndex].members.push(userId);
+      groups[groupIndex].members.push(userId)
     }
 
-    return groups[groupIndex];
+    return groups[groupIndex]
   },
 
   getGroupMembers: async (groupId: string): Promise<User[]> => {
-    await delay(500);
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) throw new Error("Group not found");
+    await delay(500)
+    const group = groups.find((g) => g.id === groupId)
+    if (!group) throw new Error("Group not found")
 
     return users
       .filter((user) => group.members.includes(user.id))
       .sort((a, b) => {
         // Sort by status (online first)
         if (a.status !== b.status) {
-          return a.status === "online" ? -1 : 1;
+          return a.status === "online" ? -1 : 1
         }
         // Then sort alphabetically by username
-        return a.username.localeCompare(b.username);
-      });
+        return a.username.localeCompare(b.username)
+      })
   },
 
   // Chat related functions
-  getPrivateChat: async (
-    userId1: string,
-    userId2: string
-  ): Promise<PrivateChat> => {
-    await delay(600);
-    return findOrCreatePrivateChat(userId1, userId2);
+  getPrivateChat: async (userId1: string, userId2: string): Promise<PrivateChat> => {
+    await delay(600)
+    return findOrCreatePrivateChat(userId1, userId2)
   },
 
-  getPrivateMessages: async (
-    userId1: string,
-    userId2: string
-  ): Promise<Message[]> => {
-    await delay(600);
-    const chat = findOrCreatePrivateChat(userId1, userId2);
-    return [...chat.messages].sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+  getPrivateMessages: async (userId1: string, userId2: string): Promise<Message[]> => {
+    await delay(600)
+    const chat = findOrCreatePrivateChat(userId1, userId2)
+    return [...chat.messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
   },
 
   getGroupMessages: async (groupId: string): Promise<Message[]> => {
-    await delay(600);
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) return [];
-    return [...group.messages].sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+    await delay(600)
+    const group = groups.find((g) => g.id === groupId)
+    if (!group) return []
+    return [...group.messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
   },
 
-  sendPrivateMessage: async (
-    author: string,
-    to: string,
-    content: string
-  ): Promise<Message> => {
-    await delay(400);
+  sendPrivateMessage: async (author: string, to: string, content: string): Promise<Message> => {
+    await delay(400)
     const newMessage: Message = {
       id: `m${generateId()}`,
       author,
@@ -284,20 +256,16 @@ export const mockApi = {
       timestamp: new Date().toISOString(),
       edited: false,
       deleted: false,
-    };
+    }
 
-    const chat = findOrCreatePrivateChat(author, to);
-    chat.messages.push(newMessage);
+    const chat = findOrCreatePrivateChat(author, to)
+    chat.messages.push(newMessage)
 
-    return newMessage;
+    return newMessage
   },
 
-  sendGroupMessage: async (
-    groupId: string,
-    author: string,
-    content: string
-  ): Promise<Message> => {
-    await delay(400);
+  sendGroupMessage: async (groupId: string, author: string, content: string): Promise<Message> => {
+    await delay(400)
     const newMessage: Message = {
       id: `m${generateId()}`,
       author,
@@ -305,95 +273,88 @@ export const mockApi = {
       timestamp: new Date().toISOString(),
       edited: false,
       deleted: false,
-    };
+    }
 
-    const groupIndex = groups.findIndex((g) => g.id === groupId);
-    if (groupIndex === -1) throw new Error("Group not found");
+    const groupIndex = groups.findIndex((g) => g.id === groupId)
+    if (groupIndex === -1) throw new Error("Group not found")
 
-    groups[groupIndex].messages.push(newMessage);
-    return newMessage;
+    // Check if user is a member of the group
+    if (!groups[groupIndex].members.includes(author)) {
+      throw new Error("User is not a member of this group")
+    }
+
+    groups[groupIndex].messages.push(newMessage)
+    return newMessage
   },
 
   editMessage: async (
     chatType: "private" | "group",
     chatId: string,
     messageId: string,
-    newContent: string
+    newContent: string,
   ): Promise<Message> => {
-    await delay(400);
+    await delay(400)
 
     if (chatType === "private") {
-      const chatIndex = privateChats.findIndex((chat) => chat.id === chatId);
-      if (chatIndex === -1) throw new Error("Chat not found");
+      const chatIndex = privateChats.findIndex((chat) => chat.id === chatId)
+      if (chatIndex === -1) throw new Error("Chat not found")
 
-      const messageIndex = privateChats[chatIndex].messages.findIndex(
-        (msg) => msg.id === messageId
-      );
-      if (messageIndex === -1) throw new Error("Message not found");
+      const messageIndex = privateChats[chatIndex].messages.findIndex((msg) => msg.id === messageId)
+      if (messageIndex === -1) throw new Error("Message not found")
 
-      privateChats[chatIndex].messages[messageIndex].content = newContent;
-      privateChats[chatIndex].messages[messageIndex].edited = true;
+      privateChats[chatIndex].messages[messageIndex].content = newContent
+      privateChats[chatIndex].messages[messageIndex].edited = true
 
-      return privateChats[chatIndex].messages[messageIndex];
+      return privateChats[chatIndex].messages[messageIndex]
     } else {
-      const groupIndex = groups.findIndex((g) => g.id === chatId);
-      if (groupIndex === -1) throw new Error("Group not found");
+      const groupIndex = groups.findIndex((g) => g.id === chatId)
+      if (groupIndex === -1) throw new Error("Group not found")
 
-      const messageIndex = groups[groupIndex].messages.findIndex(
-        (msg) => msg.id === messageId
-      );
-      if (messageIndex === -1) throw new Error("Message not found");
+      const messageIndex = groups[groupIndex].messages.findIndex((msg) => msg.id === messageId)
+      if (messageIndex === -1) throw new Error("Message not found")
 
-      groups[groupIndex].messages[messageIndex].content = newContent;
-      groups[groupIndex].messages[messageIndex].edited = true;
+      groups[groupIndex].messages[messageIndex].content = newContent
+      groups[groupIndex].messages[messageIndex].edited = true
 
-      return groups[groupIndex].messages[messageIndex];
+      return groups[groupIndex].messages[messageIndex]
     }
   },
 
-  deleteMessage: async (
-    chatType: "private" | "group",
-    chatId: string,
-    messageId: string
-  ): Promise<Message> => {
-    await delay(400);
+  deleteMessage: async (chatType: "private" | "group", chatId: string, messageId: string): Promise<Message> => {
+    await delay(400)
 
     if (chatType === "private") {
-      const chatIndex = privateChats.findIndex((chat) => chat.id === chatId);
-      if (chatIndex === -1) throw new Error("Chat not found");
+      const chatIndex = privateChats.findIndex((chat) => chat.id === chatId)
+      if (chatIndex === -1) throw new Error("Chat not found")
 
-      const messageIndex = privateChats[chatIndex].messages.findIndex(
-        (msg) => msg.id === messageId
-      );
-      if (messageIndex === -1) throw new Error("Message not found");
+      const messageIndex = privateChats[chatIndex].messages.findIndex((msg) => msg.id === messageId)
+      if (messageIndex === -1) throw new Error("Message not found")
 
-      privateChats[chatIndex].messages[messageIndex].deleted = true;
+      privateChats[chatIndex].messages[messageIndex].deleted = true
 
-      return privateChats[chatIndex].messages[messageIndex];
+      return privateChats[chatIndex].messages[messageIndex]
     } else {
-      const groupIndex = groups.findIndex((g) => g.id === chatId);
-      if (groupIndex === -1) throw new Error("Group not found");
+      const groupIndex = groups.findIndex((g) => g.id === chatId)
+      if (groupIndex === -1) throw new Error("Group not found")
 
-      const messageIndex = groups[groupIndex].messages.findIndex(
-        (msg) => msg.id === messageId
-      );
-      if (messageIndex === -1) throw new Error("Message not found");
+      const messageIndex = groups[groupIndex].messages.findIndex((msg) => msg.id === messageId)
+      if (messageIndex === -1) throw new Error("Message not found")
 
-      groups[groupIndex].messages[messageIndex].deleted = true;
+      groups[groupIndex].messages[messageIndex].deleted = true
 
-      return groups[groupIndex].messages[messageIndex];
+      return groups[groupIndex].messages[messageIndex]
     }
   },
 
   addUser: async (username: string, email: string): Promise<User> => {
-    await delay(500);
+    await delay(500)
     const newUser: User = {
       id: generateId(),
       username,
       email,
       status: "online",
-    };
-    users = [...users, newUser];
-    return newUser;
+    }
+    users = [...users, newUser]
+    return newUser
   },
-};
+}

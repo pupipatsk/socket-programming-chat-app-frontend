@@ -1,4 +1,3 @@
-// src/components/group-details.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -18,7 +17,7 @@ interface GroupDetailsProps {
   currentUser: User
   allUsers: User[]
   onAddMember: (groupId: string, userId: string) => void
-  showAddMembersSection?: boolean // New prop
+  showAddMembersSection?: boolean
 }
 
 export function GroupDetails({
@@ -28,7 +27,7 @@ export function GroupDetails({
   currentUser,
   allUsers,
   onAddMember,
-  showAddMembersSection = false, // Default to false
+  showAddMembersSection = false,
 }: GroupDetailsProps) {
   const [members, setMembers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState("")

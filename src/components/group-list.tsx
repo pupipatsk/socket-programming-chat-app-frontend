@@ -1,31 +1,24 @@
-// src/components/group-list.tsx
-"use client";
+"use client"
 
-import type React from "react";
-import { useState } from "react";
-import type { GroupChat } from "@/types";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Users, Plus, UserPlus, Info, Check } from "lucide-react";
-import { isUserInGroup } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import type React from "react"
+import { useState } from "react"
+import type { GroupChat } from "@/types"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Users, Plus, UserPlus, Info } from "lucide-react"
+import { isUserInGroup } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 interface GroupListProps {
-  groups: GroupChat[];
-  onSelectGroup: (groupId: string) => void;
-  onCreateGroup: (name: string) => void;
-  onJoinGroup: (groupId: string) => void;
-  onViewGroupDetails: (groupId: string) => void;
-  currentUserId: string;
-  activeChat: { type: "private_chat" | "group"; id: string } | null;
+  groups: GroupChat[]
+  onSelectGroup: (groupId: string) => void
+  onCreateGroup: (name: string) => void
+  onJoinGroup: (groupId: string) => void
+  onViewGroupDetails: (groupId: string, showAddMembers?: boolean) => void
+  currentUserId: string
+  activeChat: { type: "private_chat" | "group"; id: string } | null
 }
 
 export function GroupList({
@@ -37,21 +30,20 @@ export function GroupList({
   currentUserId,
   activeChat,
 }: GroupListProps) {
-  const [newGroupName, setNewGroupName] = useState("");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
-  const [selectedGroupForJoin, setSelectedGroupForJoin] =
-    useState<GroupChat | null>(null);
-  const { toast } = useToast();
+  const [newGroupName, setNewGroupName] = useState("")
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false)
+  const [selectedGroupForJoin, setSelectedGroupForJoin] = useState<GroupChat | null>(null)
+  const { toast } = useToast()
 
   const handleCreateGroup = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (newGroupName.trim()) {
-      onCreateGroup(newGroupName.trim());
-      setNewGroupName("");
-      setCreateDialogOpen(false);
+      onCreateGroup(newGroupName.trim())
+      setNewGroupName("")
+      setCreateDialogOpen(false)
     }
-  };
+  }
 
   const handleJoinButtonClick = (group: GroupChat) => {
     // Check if user is already a member
@@ -60,27 +52,21 @@ export function GroupList({
         title: "Already a member",
         description: `You are already a member of ${group.name}`,
         duration: 3000,
-      });
+      })
     } else {
       // Show join dialog
-      setSelectedGroupForJoin(group);
-      setJoinDialogOpen(true);
+      setSelectedGroupForJoin(group)
+      setJoinDialogOpen(true)
     }
-  };
+  }
 
   const handleConfirmJoin = () => {
     if (selectedGroupForJoin) {
-      onJoinGroup(selectedGroupForJoin.id);
-      setJoinDialogOpen(false);
-      setSelectedGroupForJoin(null);
-
-      toast({
-        title: "Group joined",
-        description: `You have joined ${selectedGroupForJoin.name}`,
-        duration: 1500,
-      });
+      onJoinGroup(selectedGroupForJoin.id)
+      setJoinDialogOpen(false)
+      setSelectedGroupForJoin(null)
     }
-  };
+  }
 
   return (
     <div className="space-y-2">
@@ -93,11 +79,7 @@ export function GroupList({
 
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-black/5"
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/5">
               <Plus className="h-4 w-4" />
               <span className="sr-only">Create Group</span>
             </Button>
@@ -113,10 +95,7 @@ export function GroupList({
                 onChange={(e) => setNewGroupName(e.target.value)}
                 className="glass-input"
               />
-              <Button
-                type="submit"
-                className="w-full bg-black text-white hover:bg-black/90"
-              >
+              <Button type="submit" className="w-full bg-black text-white hover:bg-black/90">
                 Create Group
               </Button>
             </form>
@@ -128,29 +107,31 @@ export function GroupList({
         <div className="p-2">
           {groups.length > 0 ? (
             groups.map((group) => {
-              const isUserMember = isUserInGroup(currentUserId, group);
+              const isUserMember = isUserInGroup(currentUserId, group)
 
               return (
                 <div
                   key={group.id}
                   className={`
-    grid grid-cols-[1fr_auto_auto] items-center gap-0 px-2 py-1 mb-1 rounded transition cursor-pointer
-    ${
-      activeChat?.type === "group" && activeChat.id === group.id
-        ? "bg-black/10"
-        : "hover:bg-black/5"
-    }
-  `}
-                  onClick={() => onSelectGroup(group.id)}
+                    grid grid-cols-[1fr_auto_auto] items-center gap-0 px-2 py-1 mb-1 rounded transition cursor-pointer
+                    ${activeChat?.type === "group" && activeChat.id === group.id ? "bg-black/10" : "hover:bg-black/5"}
+                  `}
+                  onClick={() => {
+                    if (isUserMember) {
+                      onSelectGroup(group.id)
+                    } else {
+                      toast({
+                        title: "Access denied",
+                        description: `You are not a member of ${group.name}. Join the group to view messages.`,
+                        variant: "destructive",
+                      })
+                    }
+                  }}
                 >
                   {/* Group name and count */}
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="truncate text-sm font-medium">
-                      {group.name}
-                    </span>
-                    <span className="text-xs text-black/60 whitespace-nowrap">
-                      ({group.members?.length || 0})
-                    </span>
+                    <span className="truncate text-sm font-medium">{group.name}</span>
+                    <span className="text-xs text-black/60 whitespace-nowrap">({group.members?.length || 0})</span>
                   </div>
 
                   {/* Join icon */}
@@ -159,22 +140,12 @@ export function GroupList({
                     size="icon"
                     className="h-8 w-8 p-0 hover:bg-black/5 flex items-center justify-center"
                     onClick={(e) => {
-                      e.stopPropagation();
-                      handleJoinButtonClick(group);
+                      e.stopPropagation()
+                      handleJoinButtonClick(group)
                     }}
-                    title={
-                      isUserInGroup(currentUserId, group)
-                        ? "Already a member"
-                        : "Join Group"
-                    }
+                    title={isUserInGroup(currentUserId, group) ? "Already a member" : "Join Group"}
                   >
-                    <UserPlus
-                      className={`h-4 w-4 ${
-                        isUserInGroup(currentUserId, group)
-                          ? "text-green-500"
-                          : ""
-                      }`}
-                    />
+                    <UserPlus className={`h-4 w-4 ${isUserInGroup(currentUserId, group) ? "text-green-500" : ""}`} />
                   </Button>
 
                   {/* Info icon */}
@@ -183,20 +154,18 @@ export function GroupList({
                     size="icon"
                     className="h-8 w-8 p-0 hover:bg-black/5 flex items-center justify-center"
                     onClick={(e) => {
-                      e.stopPropagation();
-                      onViewGroupDetails(group.id);
+                      e.stopPropagation()
+                      onViewGroupDetails(group.id)
                     }}
                     title="Group Details"
                   >
                     <Info className="h-4 w-4" />
                   </Button>
                 </div>
-              );
+              )
             })
           ) : (
-            <div className="text-center py-4 text-black/40">
-              No groups available
-            </div>
+            <div className="text-center py-4 text-black/40">No groups available</div>
           )}
         </div>
       </ScrollArea>
@@ -209,11 +178,7 @@ export function GroupList({
           </DialogHeader>
           <div className="py-4">
             <p>
-              Are you sure you want to join{" "}
-              <span className="font-semibold">
-                {selectedGroupForJoin?.name}
-              </span>
-              ?
+              Are you sure you want to join <span className="font-semibold">{selectedGroupForJoin?.name}</span>?
             </p>
           </div>
           <div className="flex justify-end gap-2">
@@ -225,5 +190,5 @@ export function GroupList({
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }

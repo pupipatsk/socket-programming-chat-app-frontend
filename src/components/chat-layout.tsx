@@ -1,8 +1,6 @@
-// src/components/chat-layout.tsx
 "use client"
 
 import type React from "react"
-
 import type { User } from "@/types"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"

@@ -1,30 +1,24 @@
-// src/components/chat-window.tsx
-"use client";
+"use client"
 
-import type React from "react";
-
-import { useEffect, useRef, useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import type { Message, User, GroupChat } from "@/types";
+import type React from "react"
+import { useEffect, useRef, useState } from "react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import type { Message, User, GroupChat } from "@/types"
+import { formatTime, formatDate, getUserName, groupMessagesByDate } from "@/lib/utils"
 
 interface ChatWindowProps {
-  messages: Message[];
-  currentUser: User;
-  activeChat: { type: "private_chat" | "group"; id: string } | null;
-  users: User[];
-  groups: GroupChat[];
-  isLoading: boolean;
-  onEditMessage: (messageId: string, content: string) => void;
-  onDeleteMessage: (messageId: string) => void;
+  messages: Message[]
+  currentUser: User
+  activeChat: { type: "private_chat" | "group"; id: string } | null
+  users: User[]
+  groups: GroupChat[]
+  isLoading: boolean
+  onEditMessage: (messageId: string, content: string) => void
+  onDeleteMessage: (messageId: string) => void
 }
 
 export function ChatWindow({
@@ -33,101 +27,70 @@ export function ChatWindow({
   activeChat,
   users,
   groups,
+  isLoading,
   onEditMessage,
   onDeleteMessage,
 }: ChatWindowProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [editingMessage, setEditingMessage] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [editingMessage, setEditingMessage] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState("")
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+      scrollRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  }, [messages]);
+  }, [messages])
 
   const getActiveChatName = () => {
-    if (!activeChat) return "Select a chat";
+    if (!activeChat) return "Select a chat"
 
     if (activeChat.type === "private_chat") {
-      const user = users.find((u) => u.id === activeChat.id);
-      return user ? user.username : "Unknown user";
+      const user = users.find((u) => u.id === activeChat.id)
+      return user ? user.username : "Unknown user"
     } else {
-      const group = groups.find((g) => g.id === activeChat.id);
-      return group ? group.name : "Unknown group";
+      const group = groups.find((g) => g.id === activeChat.id)
+      return group ? group.name : "Unknown group"
     }
-  };
-
-  const getUserName = (userId: string) => {
-    if (userId === currentUser.id) return "You";
-    const user = users.find((u) => u.id === userId);
-    return user ? user.username : "Unknown user";
-  };
-
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  };
-
-  const formatDate = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      return date.toLocaleDateString();
-    }
-  };
+  }
 
   const handleStartEdit = (message: Message) => {
-    setEditingMessage(message.id);
-    setEditContent(message.content);
-  };
+    setEditingMessage(message.id)
+    setEditContent(message.content)
+  }
 
   const handleSaveEdit = () => {
     if (editingMessage && editContent.trim()) {
-      onEditMessage(editingMessage, editContent.trim());
-      setEditingMessage(null);
-      setEditContent("");
+      onEditMessage(editingMessage, editContent.trim())
+      setEditingMessage(null)
+      setEditContent("")
     }
-  };
+  }
 
   const handleCancelEdit = () => {
-    setEditingMessage(null);
-    setEditContent("");
-  };
+    setEditingMessage(null)
+    setEditContent("")
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSaveEdit();
+      e.preventDefault()
+      handleSaveEdit()
     } else if (e.key === "Escape") {
-      handleCancelEdit();
+      handleCancelEdit()
     }
-  };
+  }
 
   // Group messages by date for better display
-  const messagesByDate = messages.reduce<Record<string, Message[]>>(
-    (groups, message) => {
-      const date = new Date(message.timestamp).toDateString();
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(message);
-      return groups;
-    },
-    {}
-  );
+  const messagesByDate = groupMessagesByDate(messages)
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-lg text-black/40">Loading messages...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 flex flex-col">
@@ -141,21 +104,14 @@ export function ChatWindow({
             <div className="space-y-4">
               {Object.entries(messagesByDate).map(([date, dateMessages]) => (
                 <div key={date} className="space-y-2">
-                  <div className="text-center text-xs text-black/40 my-2">
-                    {formatDate(dateMessages[0].timestamp)}
-                  </div>
+                  <div className="text-center text-xs text-black/40 my-2">{formatDate(dateMessages[0].timestamp)}</div>
                   {dateMessages.map((message) => {
-                    const isCurrentUser = message.author === currentUser.id;
-                    const isDeleted = message.deleted;
-                    const canModify = isCurrentUser && !isDeleted;
+                    const isCurrentUser = message.author === currentUser.id
+                    const isDeleted = message.deleted
+                    const canModify = isCurrentUser && !isDeleted
 
                     return (
-                      <div
-                        key={message.id}
-                        className={`flex ${
-                          isCurrentUser ? "justify-end" : "justify-start"
-                        }`}
-                      >
+                      <div key={message.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
                         <div
                           className={`max-w-[70%] p-4 rounded-2xl shadow-sm backdrop-blur-md ${
                             isCurrentUser
@@ -165,7 +121,7 @@ export function ChatWindow({
                         >
                           {!isCurrentUser && activeChat.type === "group" && (
                             <div className="text-xs font-semibold mb-1">
-                              {getUserName(message.author)}
+                              {getUserName(message.author, currentUser, users)}
                             </div>
                           )}
 
@@ -179,61 +135,37 @@ export function ChatWindow({
                                 autoFocus
                               />
                               <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  onClick={handleCancelEdit}
-                                  className="h-9 w-15 px-2 text-xs"
-                                >
+                                <Button variant="ghost" onClick={handleCancelEdit} className="h-9 w-15 px-2 text-xs">
                                   Cancel
                                 </Button>
-                                <Button
-                                  variant="default"
-                                  onClick={handleSaveEdit}
-                                  className="h-9 w-20 px-2 text-xs"
-                                >
+                                <Button variant="default" onClick={handleSaveEdit} className="h-9 w-20 px-2 text-xs">
                                   Save
                                 </Button>
                               </div>
                             </div>
                           ) : (
-                            <div
-                              className={`${
-                                isDeleted ? "italic text-black/50" : ""
-                              }`}
-                            >
-                              {isDeleted
-                                ? "[Message deleted]"
-                                : message.content}
+                            <div className={`${isDeleted ? "italic text-white/80" : ""}`}>
+                              {isDeleted ? "(Message deleted)" : message.content}
                             </div>
                           )}
 
                           <div className="text-xs opacity-70 text-right mt-1 flex items-center justify-end">
                             {formatTime(message.timestamp)}
-                            {message.edited && !message.deleted && (
-                              <span className="ml-1">(edited)</span>
-                            )}
+                            {message.edited && !message.deleted && <span className="ml-1">(edited)</span>}
 
                             {canModify && !editingMessage && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 ml-1"
-                                  >
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
                                     <MoreHorizontal className="h-3 w-3" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => handleStartEdit(message)}
-                                  >
+                                  <DropdownMenuItem onClick={() => handleStartEdit(message)}>
                                     <Pencil className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => onDeleteMessage(message.id)}
-                                  >
+                                  <DropdownMenuItem onClick={() => onDeleteMessage(message.id)}>
                                     <Trash2 className="h-4 w-4 mr-2 text-destructive" />
                                     Delete
                                   </DropdownMenuItem>
@@ -243,7 +175,7 @@ export function ChatWindow({
                           </div>
                         </div>
                       </div>
-                    );
+                    )
                   })}
                 </div>
               ))}
@@ -261,5 +193,5 @@ export function ChatWindow({
         )}
       </ScrollArea>
     </div>
-  );
+  )
 }
