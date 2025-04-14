@@ -19,7 +19,7 @@ export default function ChatPage() {
   const [activeChat, setActiveChat] = useState<{ type: "user" | "group"; id: string } | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [connectionStatus, setConnectionStatus] = useState("Connected") // 👈 Add this
+  const [connectionStatus] = useState("Connected") // 👈 Add this
 
 
   useEffect(() => {
