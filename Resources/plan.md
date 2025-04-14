@@ -3,10 +3,9 @@
 ## Tech stack
 - Design style: Zen, Glassmorphism, McKinsey
 - Frontend: Next.js
-  - Tailwind CSS / ShadCN
+  - Tailwind CSS version 3 / ShadCN
   - React
   - Socket.IO
-  - Axios
 - Backend: FastAPI
 - Database: MongoDB
 
