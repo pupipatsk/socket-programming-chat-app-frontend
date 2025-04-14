@@ -81,7 +81,7 @@ export function ChatWindow({
                     <div
                       className={`max-w-[70%] p-4 rounded-2xl shadow-sm backdrop-blur-md ${
                         isCurrentUser
-                          ? "bg-black/60 text-white rounded-br-none"
+                          ? "bg-black/80 text-white rounded-br-none"
                           : "bg-gray-200/30 text-black border border-white/20 rounded-bl-none"
                       }`}
                     >
