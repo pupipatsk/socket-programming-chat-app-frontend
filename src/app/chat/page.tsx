@@ -102,19 +102,6 @@ function ChatPageContent() {
       showSidebar={showSidebar}
     >
       <div className="flex h-full relative">
-        {/* Mobile sidebar toggle button */}
-        {isMobile && !showSidebar && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="absolute top-2 left-2 z-20 md:hidden touch-target"
-          >
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Open sidebar</span>
-          </Button>
-        )}
-
         {/* Sidebar */}
         {showSidebar && (
           <div
