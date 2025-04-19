@@ -11,7 +11,7 @@ export function generateId(): string {
 
 export function formatTime(timestamp: string): string {
   const date = new Date(timestamp)
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false})
 }
 
 export function formatDate(timestamp: string): string {
