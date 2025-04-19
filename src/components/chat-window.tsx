@@ -33,6 +33,21 @@ interface ChatWindowProps {
   isSmallMobile?: boolean;
 }
 
+export function deduplicateMessages(messages: Message[]): Message[] {
+  const seen = new Set<string>();
+  const result: Message[] = [];
+
+  for (const msg of messages) {
+    const key = `${msg.author}-${msg.content.trim()}-${new Date(msg.timestamp).toISOString().slice(0, 19)}`; // to seconds
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(msg);
+    }
+  }
+
+  return result;
+}
+
 export function ChatWindow({
   messages,
   currentUser,
@@ -52,18 +67,14 @@ export function ChatWindow({
   const [autoScroll, setAutoScroll] = useState(true);
   const [prevMessagesLength, setPrevMessagesLength] = useState(0);
 
-  // Detect scroll position to determine if auto-scroll should be enabled
   useEffect(() => {
     const handleScroll = () => {
       if (!scrollAreaRef.current) return;
-
       const scrollElement = scrollAreaRef.current.querySelector(
         "[data-radix-scroll-area-viewport]"
       );
       if (!scrollElement) return;
-
       const { scrollTop, scrollHeight, clientHeight } = scrollElement;
-      // Consider "near bottom" if within 100px of the bottom
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       setAutoScroll(isNearBottom);
     };
@@ -77,14 +88,12 @@ export function ChatWindow({
     }
   }, [scrollAreaRef.current]);
 
-  // Auto-scroll to bottom when new messages arrive if autoScroll is true
   useEffect(() => {
     if (
       messages.length > prevMessagesLength &&
       autoScroll &&
       scrollRef.current
     ) {
-      // Use requestAnimationFrame to ensure the DOM has updated before scrolling
       requestAnimationFrame(() => {
         scrollRef.current?.scrollIntoView({ behavior: "smooth" });
       });
@@ -92,10 +101,8 @@ export function ChatWindow({
     setPrevMessagesLength(messages.length);
   }, [messages, prevMessagesLength, autoScroll]);
 
-  // Scroll to bottom on initial load or when changing chats
   useEffect(() => {
     if (scrollRef.current && messages.length > 0) {
-      // Use requestAnimationFrame to ensure the DOM has updated before scrolling
       requestAnimationFrame(() => {
         scrollRef.current?.scrollIntoView({ behavior: "auto" });
       });
@@ -104,7 +111,6 @@ export function ChatWindow({
 
   const getActiveChatName = () => {
     if (!activeChat) return "Select a chat";
-
     if (activeChat.type === "private_chat") {
       const user = users.find((u) => u.id === activeChat.id);
       return user ? user.username : "Unknown user";
@@ -141,8 +147,8 @@ export function ChatWindow({
     }
   };
 
-  // Group messages by date for better display
-  const messagesByDate = groupMessagesByDate(messages);
+  const uniqueMessages = deduplicateMessages(messages);
+  const messagesByDate = groupMessagesByDate(uniqueMessages);
 
   if (isLoading) {
     return (
@@ -172,130 +178,144 @@ export function ChatWindow({
               messages.length > 0 ? (
                 <div className="space-y-4">
                   {Object.entries(messagesByDate).map(
-                    ([date, dateMessages]) => (
-                      <div key={date} className="space-y-2">
-                        <div className="text-center text-xs text-black/40 my-2">
-                          {formatDate(dateMessages[0].timestamp)}
-                        </div>
-                        {dateMessages.map((message) => {
-                          const isCurrentUser =
-                            message.author === currentUser.id;
-                          const isDeleted = message.deleted;
-                          const canModify = isCurrentUser && !isDeleted;
+                    ([date, dateMessages]) => {
+                      const seenIds = new Set<string>();
+                      const uniqueMessages = dateMessages.filter((msg) => {
+                        if (seenIds.has(msg.id)) return false;
+                        seenIds.add(msg.id);
+                        return true;
+                      });
 
-                          return (
-                            <div
-                              key={message.id}
-                              className={`flex ${
-                                isCurrentUser ? "justify-end" : "justify-start"
-                              }`}
-                            >
+                      return (
+                        <div key={date} className="space-y-2">
+                          <div className="text-center text-xs text-black/40 my-2">
+                            {formatDate(uniqueMessages[0].timestamp)}
+                          </div>
+
+                          {uniqueMessages.map((message) => {
+                            const isCurrentUser =
+                              message.author === currentUser.id;
+                            const isDeleted = message.deleted;
+                            const canModify = isCurrentUser && !isDeleted;
+
+                            return (
                               <div
-                                className={`max-w-[85%] sm:max-w-[75%] p-3 md:p-4 rounded-2xl shadow-sm backdrop-blur-md ${
+                                key={message.id}
+                                className={`flex ${
                                   isCurrentUser
-                                    ? "bg-black/80 text-white rounded-br-none"
-                                    : "bg-gray-200/30 text-black border border-white/20 rounded-bl-none"
+                                    ? "justify-end"
+                                    : "justify-start"
                                 }`}
                               >
-                                {!isCurrentUser &&
-                                  activeChat.type === "group" && (
-                                    <div className="text-xs font-semibold mb-1">
-                                      {getUserName(
-                                        message.author,
-                                        currentUser,
-                                        users
-                                      )}
-                                    </div>
-                                  )}
+                                <div
+                                  className={`max-w-[85%] sm:max-w-[75%] p-3 md:p-4 rounded-2xl shadow-sm backdrop-blur-md ${
+                                    isCurrentUser
+                                      ? "bg-black/80 text-white rounded-br-none"
+                                      : "bg-gray-200/30 text-black border border-white/20 rounded-bl-none"
+                                  }`}
+                                >
+                                  {!isCurrentUser &&
+                                    activeChat.type === "group" && (
+                                      <div className="text-xs font-semibold mb-1">
+                                        {getUserName(
+                                          message.author,
+                                          currentUser,
+                                          users
+                                        )}
+                                      </div>
+                                    )}
 
-                                {editingMessage === message.id ? (
-                                  <div className="space-y-2">
-                                    <Textarea
-                                      value={editContent}
-                                      onChange={(e) =>
-                                        setEditContent(e.target.value)
-                                      }
-                                      onKeyDown={handleKeyDown}
-                                      className={`min-h-[60px] text-sm ${
-                                        isCurrentUser
-                                          ? "text-white bg-black/50"
-                                          : ""
-                                      }`}
-                                      autoFocus
-                                    />
-                                    <div className="flex justify-end gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        onClick={handleCancelEdit}
-                                        className="h-8 w-15 px-2 text-xs"
-                                      >
-                                        Cancel
-                                      </Button>
-                                      <Button
-                                        variant="default"
-                                        onClick={handleSaveEdit}
-                                        className="h-8 w-15 px-2 text-xs"
-                                      >
-                                        Save
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div
-                                    className={`${
-                                      isDeleted ? "italic text-opacity-80" : ""
-                                    } text-sm md:text-base break-words`}
-                                  >
-                                    {isDeleted
-                                      ? "(Message deleted)"
-                                      : message.content}
-                                  </div>
-                                )}
-
-                                <div className="text-xs opacity-70 text-right mt-1 flex items-center justify-end">
-                                  {formatTime(message.timestamp)}
-                                  {message.edited && !message.deleted && (
-                                    <span className="ml-1">(edited)</span>
-                                  )}
-
-                                  {canModify && !editingMessage && (
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
+                                  {editingMessage === message.id ? (
+                                    <div className="space-y-2">
+                                      <Textarea
+                                        value={editContent}
+                                        onChange={(e) =>
+                                          setEditContent(e.target.value)
+                                        }
+                                        onKeyDown={handleKeyDown}
+                                        className={`min-h-[60px] text-sm ${
+                                          isCurrentUser
+                                            ? "text-white bg-black/50"
+                                            : ""
+                                        }`}
+                                        autoFocus
+                                      />
+                                      <div className="flex justify-end gap-2">
                                         <Button
                                           variant="ghost"
-                                          size="icon"
-                                          className="h-6 w-6 ml-1 touch-target"
+                                          onClick={handleCancelEdit}
+                                          className="h-8 w-15 px-2 text-xs"
                                         >
-                                          <MoreHorizontal className="h-3 w-3" />
+                                          Cancel
                                         </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            handleStartEdit(message)
-                                          }
+                                        <Button
+                                          variant="default"
+                                          onClick={handleSaveEdit}
+                                          className="h-8 w-15 px-2 text-xs"
                                         >
-                                          <Pencil className="h-4 w-4 mr-2" />
-                                          Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() =>
-                                            onDeleteMessage(message.id)
-                                          }
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2 text-destructive" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
+                                          Save
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className={`${
+                                        isDeleted
+                                          ? "italic text-opacity-80"
+                                          : ""
+                                      } text-sm md:text-base break-words`}
+                                    >
+                                      {isDeleted
+                                        ? "(Message deleted)"
+                                        : message.content}
+                                    </div>
                                   )}
+
+                                  <div className="text-xs opacity-70 text-right mt-1 flex items-center justify-end">
+                                    {formatTime(message.timestamp)}
+                                    {message.edited && !message.deleted && (
+                                      <span className="ml-1">(edited)</span>
+                                    )}
+
+                                    {canModify && !editingMessage && (
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 ml-1 touch-target"
+                                          >
+                                            <MoreHorizontal className="h-3 w-3" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleStartEdit(message)
+                                            }
+                                          >
+                                            <Pencil className="h-4 w-4 mr-2" />
+                                            Edit
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              onDeleteMessage(message.id)
+                                            }
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )
+                            );
+                          })}
+                        </div>
+                      );
+                    }
                   )}
                   <div ref={scrollRef} className="h-1" />
                 </div>
@@ -312,7 +332,6 @@ export function ChatWindow({
           </div>
         </ScrollArea>
 
-        {/* Scroll to bottom button - show when not auto-scrolling */}
         {!autoScroll && messages.length > 5 && (
           <Button
             variant="secondary"
