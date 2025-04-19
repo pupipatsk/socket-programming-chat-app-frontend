@@ -11,28 +11,42 @@ export function generateId(): string {
 
 export function formatTime(timestamp: string): string {
   const date = new Date(timestamp)
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false})
+  return date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Bangkok", // Force GMT+7
+  })
 }
 
 export function formatDate(timestamp: string): string {
   const date = new Date(timestamp)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
 
-  if (date.toDateString() === today.toDateString()) {
+  const today = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" })
+  )
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+
+  const messageDate = new Date(
+    date.toLocaleString("en-US", { timeZone: "Asia/Bangkok" })
+  )
+
+  if (messageDate.toDateString() === today.toDateString()) {
     return "Today"
-  } else if (date.toDateString() === yesterday.toDateString()) {
+  } else if (messageDate.toDateString() === yesterday.toDateString()) {
     return "Yesterday"
   } else {
-    return date.toLocaleDateString(undefined, {
+    return messageDate.toLocaleDateString("en-GB", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "Asia/Bangkok",
     })
   }
 }
+
 
 export function getUserName(userId: string, currentUser: any, users: any[]): string {
   if (userId === currentUser.id) return "You"
