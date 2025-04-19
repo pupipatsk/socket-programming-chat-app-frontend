@@ -16,8 +16,9 @@ interface GroupDetailsProps {
   group: GroupChat | null
   currentUser: User
   allUsers: User[]
-  onAddMember: (groupId: string, userId: string) => void
+  onAddMember: (groupId: string, userId: string) => Promise<void>
   showAddMembersSection?: boolean
+  isMobile?: boolean
 }
 
 export function GroupDetails({
@@ -28,6 +29,7 @@ export function GroupDetails({
   allUsers,
   onAddMember,
   showAddMembersSection = false,
+  isMobile = false,
 }: GroupDetailsProps) {
   const [members, setMembers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -68,7 +70,7 @@ export function GroupDetails({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-auto">
+      <DialogContent className={isMobile ? "w-[95%] max-w-[500px]" : "sm:max-w-[500px]"}>
         <DialogHeader>
           <DialogTitle>{group.name} - Group Details</DialogTitle>
         </DialogHeader>
@@ -81,7 +83,7 @@ export function GroupDetails({
                 variant="outline"
                 size="sm"
                 onClick={() => setAddMemberDialogOpen(true)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 touch-target"
               >
                 <UserPlus className="h-4 w-4" />
                 Add Members
@@ -91,9 +93,15 @@ export function GroupDetails({
 
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all">All ({members.length})</TabsTrigger>
-              <TabsTrigger value="online">Online ({onlineMembers.length})</TabsTrigger>
-              <TabsTrigger value="offline">Offline ({offlineMembers.length})</TabsTrigger>
+              <TabsTrigger value="all" className="min-h-[36px]">
+                All ({members.length})
+              </TabsTrigger>
+              <TabsTrigger value="online" className="min-h-[36px]">
+                Online ({onlineMembers.length})
+              </TabsTrigger>
+              <TabsTrigger value="offline" className="min-h-[36px]">
+                Offline ({offlineMembers.length})
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="all">
@@ -180,7 +188,7 @@ export function GroupDetails({
         </div>
 
         <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className={isMobile ? "w-[95%] max-w-md" : "sm:max-w-[425px]"}>
             <DialogHeader>
               <DialogTitle>Add Members to {group.name}</DialogTitle>
             </DialogHeader>
@@ -219,7 +227,7 @@ export function GroupDetails({
                             onAddMember(group.id, user.id)
                             setSearchTerm("")
                           }}
-                          className="h-8 hover:bg-black/5"
+                          className="h-8 hover:bg-black/5 touch-target"
                         >
                           <UserPlus className="h-4 w-4 mr-1" />
                           Add

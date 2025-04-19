@@ -12,9 +12,10 @@ interface UserListProps {
   currentUser: User
   onSelectUser: (userId: string) => void
   activeChat: { type: "private_chat" | "group"; id: string } | null
+  isMobile?: boolean
 }
 
-export function UserList({ users, currentUser, onSelectUser, activeChat }: UserListProps) {
+export function UserList({ users, currentUser, onSelectUser, activeChat, isMobile = false }: UserListProps) {
   const filteredUsers = useMemo(() => users.filter((user) => user.id !== currentUser.id), [users, currentUser.id])
 
   const onlineUsers = useMemo(() => filteredUsers.filter((user) => user.status === "online"), [filteredUsers])
@@ -22,14 +23,14 @@ export function UserList({ users, currentUser, onSelectUser, activeChat }: UserL
   const offlineUsers = useMemo(() => filteredUsers.filter((user) => user.status === "offline"), [filteredUsers])
 
   const renderUserList = (list: User[], emptyMessage: string) => (
-    <ScrollArea className="h-48 rounded-md border border-black/10 bg-white/5">
+    <ScrollArea className="responsive-scroll rounded-md border border-black/10 bg-white/5">
       <div className="p-2">
         {list.length > 0 ? (
           list.map((user) => (
             <Button
               key={user.id}
               variant="ghost"
-              className={`w-full justify-start mb-1 ${
+              className={`w-full justify-start mb-1 min-h-[44px] ${
                 activeChat?.type === "private_chat" && activeChat.id === user.id ? "bg-black/10" : ""
               } hover:bg-black/5`}
               onClick={() => onSelectUser(user.id)}
@@ -57,11 +58,17 @@ export function UserList({ users, currentUser, onSelectUser, activeChat }: UserL
         <span className="text-sm text-black/60">({filteredUsers.length})</span>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs defaultValue="online" className="w-full">
         <TabsList className="flex flex-wrap gap-1 w-full h-full">
-          <TabsTrigger value="online">Online ({onlineUsers.length})</TabsTrigger>
-          <TabsTrigger value="offline">Offline ({offlineUsers.length})</TabsTrigger>
-          <TabsTrigger value="all">All ({filteredUsers.length})</TabsTrigger>
+          <TabsTrigger value="online" className="flex-1 min-h-[36px]">
+            Online ({onlineUsers.length})
+          </TabsTrigger>
+          <TabsTrigger value="offline" className="flex-1 min-h-[36px]">
+            Offline ({offlineUsers.length})
+          </TabsTrigger>
+          <TabsTrigger value="all" className="flex-1 min-h-[36px]">
+            All ({filteredUsers.length})
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="all">{renderUserList(filteredUsers, "No users available")}</TabsContent>
         <TabsContent value="online">{renderUserList(onlineUsers, "No users online")}</TabsContent>

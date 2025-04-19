@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { ChatLayout } from "@/components/chat-layout"
-import { ChatWindow } from "@/components/chat-window"
-import { UserList } from "@/components/user-list"
-import { GroupList } from "@/components/group-list"
-import { ChatInput } from "@/components/chat-input"
-import { GroupDetails } from "@/components/group-details"
-import { useAuth } from "@/contexts/auth-context"
-import { ChatProvider, useChat } from "@/contexts/chat-context"
-import { useMediaQuery } from "@/hooks/use-media-query"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { ChatLayout } from "@/components/chat-layout";
+import { ChatWindow } from "@/components/chat-window";
+import { UserList } from "@/components/user-list";
+import { GroupList } from "@/components/group-list";
+import { ChatInput } from "@/components/chat-input";
+import { GroupDetails } from "@/components/group-details";
+import { useAuth } from "@/contexts/auth-context";
+import { ChatProvider, useChat } from "@/contexts/chat-context";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Menu, X } from "lucide-react";
+import { useState } from "react";
 
 function ChatPageContent() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
   const {
     users,
     groups,
@@ -34,81 +34,159 @@ function ChatPageContent() {
     addMemberToGroup,
     getGroupById,
     getGroupMembers,
-  } = useChat()
+  } = useChat();
 
-  const [groupDetailsOpen, setGroupDetailsOpen] = useState(false)
-  const [selectedGroup, setSelectedGroup] = useState<any>(null)
-  const [showAddMembers, setShowAddMembers] = useState(false)
+  const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [showAddMembers, setShowAddMembers] = useState(false);
 
   // Responsive state
-  const isMobile = useMediaQuery("(max-width: 768px)")
-  const [showSidebar, setShowSidebar] = useState(true)
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isSmallMobile = useMediaQuery("(max-width: 480px)");
+  const [showSidebar, setShowSidebar] = useState(!isMobile);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
+  // Handle clicks outside sidebar on mobile
   useEffect(() => {
-    if (!isMobile) {
-      setShowSidebar(true)
-    }
-  }, [isMobile])
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isMobile &&
+        showSidebar &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node)
+      ) {
+        setShowSidebar(false);
+      }
+    };
 
-  const handleViewGroupDetails = async (groupId: string, showAddMembersSection = false) => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMobile, showSidebar]);
+
+  // Reset sidebar visibility when screen size changes
+  useEffect(() => {
+    setShowSidebar(!isMobile);
+  }, [isMobile]);
+
+  const handleViewGroupDetails = async (
+    groupId: string,
+    showAddMembersSection = false
+  ) => {
     try {
-      const group = await getGroupById(groupId)
+      const group = await getGroupById(groupId);
       if (group) {
-        setSelectedGroup(group)
-        setShowAddMembers(showAddMembersSection)
-        setGroupDetailsOpen(true)
+        setSelectedGroup(group);
+        setShowAddMembers(showAddMembersSection);
+        setGroupDetailsOpen(true);
       }
     } catch (error) {
-      console.error("Error fetching group details:", error)
+      console.error("Error fetching group details:", error);
     }
-  }
+  };
 
   const toggleSidebar = () => {
-    setShowSidebar(!showSidebar)
-  }
+    setShowSidebar(!showSidebar);
+  };
 
-  if (!user) return null
+  if (!user) return null;
 
   return (
-    <ChatLayout user={user} onLogout={logout} connectionStatus={connectionStatus}>
+    <ChatLayout
+      user={user}
+      onLogout={logout}
+      connectionStatus={connectionStatus}
+      onToggleSidebar={toggleSidebar}
+      isMobile={isMobile}
+      showSidebar={showSidebar}
+    >
       <div className="flex h-full relative">
+        {/* Mobile sidebar toggle button */}
+        {isMobile && !showSidebar && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="absolute top-2 left-2 z-20 md:hidden touch-target"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Open sidebar</span>
+          </Button>
+        )}
+
         {/* Sidebar */}
-        <div
-          className={`${showSidebar ? "block" : "hidden"} ${
-            isMobile ? "absolute z-10 w-full md:w-64 h-full" : "w-64"
-          } border-r border-black/5 p-4 space-y-6 glass`}
-        >
-          <UserList
-            users={users}
-            currentUser={user}
-            onSelectUser={(userId) => {
-              setActiveChat({ type: "private_chat", id: userId })
-              if (isMobile) setShowSidebar(false)
-            }}
-            activeChat={activeChat}
-          />
-          <GroupList
-            groups={groups}
-            onSelectGroup={(groupId) => {
-              setActiveChat({ type: "group", id: groupId })
-              if (isMobile) setShowSidebar(false)
-            }}
-            onCreateGroup={createGroup}
-            onJoinGroup={joinGroup}
-            onViewGroupDetails={handleViewGroupDetails}
-            currentUserId={user.id}
-            activeChat={activeChat}
-          />
-        </div>
+        {showSidebar && (
+          <div
+            ref={sidebarRef}
+            className={`${
+              isMobile ? "mobile-sidebar" : "border-r border-black/5"
+            } responsive-sidebar bg-gradient-sidebar flex flex-col justify-between`}
+          >
+            <div className="flex flex-col h-full overflow-hidden">
+              <div className="flex-1 overflow-y-auto space-y-6 mobile-sidebar-content px-4">
+                {isMobile && (
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold">Chats</h2>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleSidebar}
+                      className="touch-target"
+                    >
+                      <X className="h-5 w-5" />
+                      <span className="sr-only">Close sidebar</span>
+                    </Button>
+                  </div>
+                )}
+
+                <UserList
+                  users={users}
+                  currentUser={user}
+                  onSelectUser={(userId) => {
+                    setActiveChat({ type: "private_chat", id: userId });
+                    if (isMobile) setShowSidebar(false);
+                  }}
+                  activeChat={activeChat}
+                  isMobile={isMobile}
+                />
+
+                <GroupList
+                  groups={groups}
+                  onSelectGroup={(groupId) => {
+                    setActiveChat({ type: "group", id: groupId });
+                    if (isMobile) setShowSidebar(false);
+                  }}
+                  onCreateGroup={createGroup}
+                  onJoinGroup={joinGroup}
+                  onViewGroupDetails={handleViewGroupDetails}
+                  currentUserId={user.id}
+                  activeChat={activeChat}
+                  isMobile={isMobile}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {isMobile && activeChat && !showSidebar && (
-            <div className="p-2 border-b border-black/10">
-              <Button variant="ghost" size="sm" onClick={toggleSidebar} className="flex items-center">
+            <div className="p-2 border-b border-black/10 flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSidebar}
+                className="flex items-center touch-target"
+              >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
+              <div className="ml-2 font-medium truncate">
+                {activeChat.type === "group"
+                  ? groups.find((g) => g.id === activeChat.id)?.name
+                  : users.find((u) => u.id === activeChat.id)?.username}
+              </div>
             </div>
           )}
 
@@ -121,8 +199,15 @@ function ChatPageContent() {
             isLoading={isLoading}
             onEditMessage={editMessage}
             onDeleteMessage={deleteMessage}
+            isMobile={isMobile}
+            isSmallMobile={isSmallMobile}
           />
-          <ChatInput onSendMessage={sendMessage} disabled={isSending || !activeChat} />
+
+          <ChatInput
+            onSendMessage={sendMessage}
+            disabled={isSending || !activeChat}
+            isMobile={isMobile}
+          />
         </div>
       </div>
 
@@ -134,32 +219,33 @@ function ChatPageContent() {
         allUsers={users}
         onAddMember={addMemberToGroup}
         showAddMembersSection={showAddMembers}
+        isMobile={isMobile}
       />
     </ChatLayout>
-  )
+  );
 }
 
 export default function ChatPage() {
-  const { user } = useAuth()
-  const router = useRouter()
+  const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (!user) {
-      router.push("/")
+      router.push("/");
     }
-  }, [user, router])
+  }, [user, router]);
 
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-light">
         <div className="text-lg">Loading...</div>
       </div>
-    )
+    );
   }
 
   return (
     <ChatProvider>
       <ChatPageContent />
     </ChatProvider>
-  )
+  );
 }

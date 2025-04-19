@@ -19,6 +19,7 @@ interface GroupListProps {
   onViewGroupDetails: (groupId: string, showAddMembers?: boolean) => void
   currentUserId: string
   activeChat: { type: "private_chat" | "group"; id: string } | null
+  isMobile?: boolean
 }
 
 export function GroupList({
@@ -29,6 +30,7 @@ export function GroupList({
   onViewGroupDetails,
   currentUserId,
   activeChat,
+  isMobile = false,
 }: GroupListProps) {
   const [newGroupName, setNewGroupName] = useState("")
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -79,12 +81,12 @@ export function GroupList({
 
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/5">
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-black/5 touch-target">
               <Plus className="h-4 w-4" />
               <span className="sr-only">Create Group</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className={isMobile ? "w-[95%] max-w-md" : ""}>
             <DialogHeader>
               <DialogTitle>Create New Group</DialogTitle>
             </DialogHeader>
@@ -103,7 +105,7 @@ export function GroupList({
         </Dialog>
       </div>
 
-      <ScrollArea className="h-48 rounded-md border border-black/10 bg-white/5">
+      <ScrollArea className="responsive-scroll rounded-md border border-black/10 bg-white/5">
         <div className="p-2">
           {groups.length > 0 ? (
             groups.map((group) => {
@@ -138,7 +140,7 @@ export function GroupList({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 p-0 hover:bg-black/5 flex items-center justify-center"
+                    className="h-8 w-8 p-0 hover:bg-black/5 flex items-center justify-center touch-target"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleJoinButtonClick(group)
@@ -152,7 +154,7 @@ export function GroupList({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 p-0 hover:bg-black/5 flex items-center justify-center"
+                    className="h-8 w-8 p-0 hover:bg-black/5 flex items-center justify-center touch-target"
                     onClick={(e) => {
                       e.stopPropagation()
                       onViewGroupDetails(group.id)
@@ -172,7 +174,7 @@ export function GroupList({
 
       {/* Join Group Dialog */}
       <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className={isMobile ? "w-[95%] max-w-md" : "sm:max-w-[425px]"}>
           <DialogHeader>
             <DialogTitle>Join Group</DialogTitle>
           </DialogHeader>

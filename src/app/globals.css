@@ -86,4 +86,120 @@
   .bg-gradient-sidebar {
     @apply bg-gradient-to-b from-white/80 to-gray-50/80;
   }
+
+  /* Responsive utilities */
+  .responsive-container {
+    @apply w-full max-w-7xl mx-auto;
+  }
+
+  .responsive-height {
+    @apply h-[calc(100vh-180px)] md:h-[calc(100vh-160px)];
+  }
+
+  .responsive-sidebar {
+    @apply w-full md:w-72 lg:w-80;
+  }
+
+  .responsive-scroll {
+    @apply h-[40vh] md:h-48 lg:h-56;
+  }
+
+  /* Mobile optimizations */
+  .mobile-sidebar {
+    @apply fixed inset-0 z-50 bg-white/95 backdrop-blur-md md:relative md:bg-transparent md:backdrop-blur-none;
+  }
+
+  .mobile-sidebar-content {
+    @apply p-4 h-full overflow-auto;
+  }
+
+  /* Touch-friendly elements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
+/* Add these styles to improve ScrollArea behavior */
+
+/* Ensure the ScrollArea viewport takes full height */
+[data-radix-scroll-area-viewport] {
+  height: 100% !important;
+}
+
+/* Improve scrollbar appearance */
+.scrollbar {
+  display: flex;
+  user-select: none;
+  touch-action: none;
+  padding: 2px;
+  background: transparent;
+  transition: background 160ms ease-out;
+}
+.scrollbar:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.scrollbar[data-orientation="vertical"] {
+  width: 10px;
+}
+.scrollbar[data-orientation="horizontal"] {
+  flex-direction: column;
+  height: 10px;
+}
+
+.scrollbar-thumb {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  position: relative;
+}
+.scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+.scrollbar-thumb:active {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Fix for iOS momentum scrolling */
+@supports (-webkit-overflow-scrolling: touch) {
+  [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Ensure message content doesn't overflow */
+.break-words {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Improve scrollbar appearance */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Safe area insets for mobile devices */
+@supports (padding: max(0px)) {
+  .safe-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
 }
