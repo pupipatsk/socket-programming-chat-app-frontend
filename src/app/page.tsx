@@ -34,9 +34,9 @@ export default function HomePage() {
 
     try {
       if (isLogin) {
-        await login(formData.username, formData.password)
+        await login(formData.email, formData.password)
       } else {
-        await register(formData.username, formData.email || `${formData.username}@example.com`)
+        await register(formData.username, formData.email, formData.password)
       }
     } catch (error) {
       console.error("Auth failed:", error)
@@ -63,33 +63,34 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  name="username"
-                  placeholder="Username"
-                  required
-                  value={formData.username}
-                  onChange={handleChange}
-                  className="zen-input"
-                />
-              </div>
-
               {!isLogin && (
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="username">Username</Label>
                   <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Email (optional)"
-                    value={formData.email}
+                    id="username"
+                    name="username"
+                    placeholder="Username"
+                    required
+                    value={formData.username}
                     onChange={handleChange}
                     className="zen-input"
                   />
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="zen-input"
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>

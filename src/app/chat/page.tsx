@@ -24,6 +24,7 @@ function ChatPageContent() {
     messages,
     isLoading,
     isSending,
+    connectionStatus,
     setActiveChat,
     sendMessage,
     editMessage,
@@ -35,7 +36,6 @@ function ChatPageContent() {
     getGroupMembers,
   } = useChat()
 
-  const [connectionStatus] = useState("Connected")
   const [groupDetailsOpen, setGroupDetailsOpen] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<any>(null)
   const [showAddMembers, setShowAddMembers] = useState(false)

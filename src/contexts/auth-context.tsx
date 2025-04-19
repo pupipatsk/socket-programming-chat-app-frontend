@@ -3,14 +3,22 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import type { User } from "@/types"
-import { mockApi } from "@/lib/mock-api"
 import { useToast } from "@/hooks/use-toast"
+import {
+  signIn as firebaseSignIn,
+  signUp as firebaseSignUp,
+  signOut as firebaseSignOut,
+  getIdToken,
+  getCurrentUser,
+} from "@/lib/firebase"
+import { api } from "@/lib/api"
 
 interface AuthContextType {
   user: User | null
+  token: string | null
   isLoading: boolean
-  login: (username: string, password: string) => Promise<void>
-  register: (username: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
+  register: (username: string, email: string, password: string) => Promise<void>
   guestLogin: () => Promise<void>
   logout: () => void
 }
@@ -19,48 +27,70 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
+  // Check authentication state on mount
   useEffect(() => {
-    // Check if user is already logged in
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
+    const checkAuth = async () => {
       try {
-        const parsedUser = JSON.parse(storedUser)
-        setUser(parsedUser)
+        setIsLoading(true)
+        const firebaseUser = await getCurrentUser()
+
+        if (firebaseUser) {
+          const idToken = await getIdToken()
+          setToken(idToken)
+
+          if (idToken) {
+            try {
+              // Get user profile from backend
+              const userProfile = await api.getCurrentUser(idToken)
+              setUser(userProfile)
+            } catch (error) {
+              console.error("Error fetching user profile:", error)
+              // If we can't get the profile, sign out
+              await firebaseSignOut()
+              setToken(null)
+              setUser(null)
+            }
+          }
+        }
       } catch (error) {
-        console.error("Failed to parse stored user:", error)
-        localStorage.removeItem("user")
+        console.error("Auth state check failed:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
-    setIsLoading(false)
+
+    checkAuth()
   }, [])
 
-  const login = async (username: string, password: string) => {
+  const login = async (email: string, password: string) => {
     try {
       setIsLoading(true)
-      const users = await mockApi.getActiveUsers()
-      const user = users.find((u) => u.username === username)
 
-      if (!user) {
-        throw new Error("User not found")
-      }
+      // Sign in with Firebase
+      const firebaseUser = await firebaseSignIn(email, password)
+      const idToken = await firebaseUser.getIdToken()
+      setToken(idToken)
 
-      localStorage.setItem("user", JSON.stringify(user))
-      setUser(user)
+      // Get user profile from backend
+      const userProfile = await api.getCurrentUser(idToken)
+      setUser(userProfile)
+
       router.push("/chat")
 
       toast({
         title: "Login successful",
-        description: `Welcome back, ${user.username}!`,
+        description: `Welcome back, ${userProfile.username}!`,
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error)
       toast({
         title: "Login failed",
-        description: "Invalid username or password",
+        description: error.message || "Invalid email or password",
         variant: "destructive",
       })
       throw error
@@ -69,23 +99,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const register = async (username: string, email: string) => {
+  const register = async (username: string, email: string, password: string) => {
     try {
       setIsLoading(true)
-      const newUser = await mockApi.addUser(username, email)
-      localStorage.setItem("user", JSON.stringify(newUser))
-      setUser(newUser)
+
+      // Create user in Firebase
+      const firebaseUser = await firebaseSignUp(email, password)
+      const idToken = await firebaseUser.getIdToken()
+      setToken(idToken)
+
+      // Register user in backend
+      const result = await api.register(idToken, username)
+
+      // Get user profile
+      const userProfile = await api.getCurrentUser(idToken)
+      setUser(userProfile)
+
       router.push("/chat")
 
       toast({
         title: "Registration successful",
-        description: `Welcome, ${newUser.username}!`,
+        description: `Welcome, ${username}!`,
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration failed:", error)
       toast({
         title: "Registration failed",
-        description: "Could not create account",
+        description: error.message || "Could not create account",
         variant: "destructive",
       })
       throw error
@@ -97,21 +137,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const guestLogin = async () => {
     try {
       setIsLoading(true)
+      const guestEmail = `guest-${Math.floor(1000 + Math.random() * 9000)}@example.com`
+      const guestPassword = `guest${Math.floor(100000 + Math.random() * 900000)}`
       const guestName = `Guest-${Math.floor(1000 + Math.random() * 9000)}`
-      const guestUser = await mockApi.addUser(guestName, `${guestName}@guest.io`)
-      localStorage.setItem("user", JSON.stringify(guestUser))
-      setUser(guestUser)
+
+      // Create guest account in Firebase
+      const firebaseUser = await firebaseSignUp(guestEmail, guestPassword)
+      const idToken = await firebaseUser.getIdToken()
+      setToken(idToken)
+
+      // Register in backend
+      await api.register(idToken, guestName)
+
+      // Get user profile
+      const userProfile = await api.getCurrentUser(idToken)
+      setUser(userProfile)
+
       router.push("/chat")
 
       toast({
         title: "Guest login successful",
-        description: `Welcome, ${guestUser.username}!`,
+        description: `Welcome, ${guestName}!`,
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Guest login failed:", error)
       toast({
         title: "Guest login failed",
-        description: "Could not create guest account",
+        description: error.message || "Could not create guest account",
         variant: "destructive",
       })
     } finally {
@@ -119,19 +171,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem("user")
-    setUser(null)
-    router.push("/")
+  const logout = async () => {
+    try {
+      await firebaseSignOut()
+      setUser(null)
+      setToken(null)
+      router.push("/")
 
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully",
-    })
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully",
+      })
+    } catch (error) {
+      console.error("Logout failed:", error)
+      toast({
+        title: "Logout failed",
+        description: "Could not log out",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, guestLogin, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, guestLogin, logout }}>
       {children}
     </AuthContext.Provider>
   )
