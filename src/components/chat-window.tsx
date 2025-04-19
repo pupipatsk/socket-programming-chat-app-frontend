@@ -154,7 +154,6 @@ export function ChatWindow({
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* TODO: This part should same side even scrollable growth */}
       {!isMobile && (
         <div className="sticky top-0 z-10 p-3 md:p-4 border-b border-black/10 bg-white/70 backdrop-blur-md">
           <h2 className="text-lg font-semibold">{getActiveChatName()}</h2>
@@ -163,12 +162,12 @@ export function ChatWindow({
 
       <div className="flex-3 overflow-hidden relative">
         <ScrollArea
-          className="h-full p-4 overflow-y-auto max-h-[calc(100vh-200px)]"
+          className="h-full p-1 overflow-y-auto max-h-[calc(100vh-200px)]"
           scrollHideDelay={300}
           type="always"
           ref={scrollAreaRef as any}
         >
-          <div className="p-3 md:p-4 pb-6 min-h-full">
+          <div className="p-3 md:p-2 pb-6 min-h-full">
             {activeChat ? (
               messages.length > 0 ? (
                 <div className="space-y-4">
