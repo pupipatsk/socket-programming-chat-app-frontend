@@ -74,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sign in with Firebase
       const firebaseUser = await firebaseSignIn(email, password)
       const idToken = await firebaseUser.getIdToken()
+      console.log("Firebase user:", firebaseUser)
+      console.log("ID Token:", idToken)
       setToken(idToken)
 
       // Get user profile from backend
