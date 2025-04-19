@@ -92,14 +92,14 @@ export function GroupDetails({
           </div>
 
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all" className="min-h-[36px]">
+            <TabsList className="grid grid-cols-3 w-full min-w-0 overflow-hidden rounded-md">
+              <TabsTrigger value="all" className="text-sm truncate">
                 All ({members.length})
               </TabsTrigger>
-              <TabsTrigger value="online" className="min-h-[36px]">
+              <TabsTrigger value="online" className="text-sm truncate">
                 Online ({onlineMembers.length})
               </TabsTrigger>
-              <TabsTrigger value="offline" className="min-h-[36px]">
+              <TabsTrigger value="offline" className="text-sm truncate">
                 Offline ({offlineMembers.length})
               </TabsTrigger>
             </TabsList>
