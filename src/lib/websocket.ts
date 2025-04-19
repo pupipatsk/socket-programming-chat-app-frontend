@@ -32,7 +32,7 @@ class WebSocketService {
 
     try {
       // Create WebSocket connection with authentication
-      this.socket = new WebSocket(`${this.url}/ws/${chatId}?user_id=${this.userId}`)
+      this.socket = new WebSocket(`${this.url}/ws/${chatId}?user_id=${this.userId}&token=${this.token}`)
 
       this.socket.onopen = () => {
         console.log(`WebSocket connected to chat ${chatId}`)
