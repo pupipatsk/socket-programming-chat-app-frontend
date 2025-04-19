@@ -1,7 +1,8 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react"
-import { mockApi } from "@/lib/mock-api"
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
+import { api } from "@/lib/api"
+import webSocketService from "@/lib/websocket"
 import type { User, GroupChat, Message } from "@/types"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/hooks/use-toast"
@@ -19,6 +20,7 @@ interface ChatContextType {
   messages: Message[]
   isLoading: boolean
   isSending: boolean
+  connectionStatus: string
   setActiveChat: (chat: ActiveChat | null) => void
   sendMessage: (content: string) => Promise<void>
   editMessage: (messageId: string, content: string) => Promise<void>
@@ -35,7 +37,7 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [groups, setGroups] = useState<GroupChat[]>([])
@@ -43,18 +45,57 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
-  const [activeChatId, setActiveChatId] = useState<string | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState("Disconnected")
+  const [privateChatIds, setPrivateChatIds] = useState<Record<string, string>>({})
+
+  // Set up WebSocket connection when active chat changes
+  useEffect(() => {
+    if (!activeChat || !user || !token) return
+
+    // Set credentials for WebSocket
+    webSocketService.setCredentials(user.id, token)
+
+    // Connect to the appropriate chat
+    const chatId = activeChat.type === "group" ? activeChat.id : privateChatIds[activeChat.id]
+
+    if (chatId) {
+      webSocketService.connect(chatId)
+
+      // Subscribe to messages
+      const unsubscribe = webSocketService.subscribeToMessages(chatId, (message) => {
+        // Only add the message if it's not already in the list
+        setMessages((prev) => {
+          if (!prev.some((m) => m.id === message.id)) {
+            return [...prev, message]
+          }
+          return prev
+        })
+      })
+
+      return () => {
+        unsubscribe()
+        webSocketService.disconnect()
+      }
+    }
+  }, [activeChat, user, token, privateChatIds])
+
+  // Subscribe to connection status
+  useEffect(() => {
+    const unsubscribe = webSocketService.subscribeToConnectionStatus((status) => {
+      setConnectionStatus(status === "connected" ? "Connected" : status === "disconnected" ? "Disconnected" : "Error")
+    })
+
+    return unsubscribe
+  }, [])
 
   // Load initial data
   useEffect(() => {
-    if (!user) return
+    if (!user || !token) return
 
     const loadInitialData = async () => {
       try {
         setIsLoading(true)
-        const [allUsers, allGroups] = await Promise.all([mockApi.getAllUsers(), mockApi.getGroups()])
-        setUsers(allUsers)
-        setGroups(allGroups)
+        await refreshData()
       } catch (error) {
         console.error("Failed to load initial data:", error)
         toast({
@@ -68,42 +109,62 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
 
     loadInitialData()
-
-    // Set up polling to simulate real-time updates
-    const pollInterval = setInterval(refreshData, 5000)
-    return () => clearInterval(pollInterval)
-  }, [user])
+  }, [user, token])
 
   // Load messages when active chat changes
   useEffect(() => {
-    if (!activeChat || !user) return
+    if (!activeChat || !user || !token) return
 
     const loadMessages = async () => {
       setIsLoading(true)
       try {
         // Check access for group chats
         if (activeChat.type === "group") {
-          const group = await mockApi.getGroupById(activeChat.id)
-          if (!isUserInGroup(user.id, group)) {
+          try {
+            const group = await api.getGroupById(token, activeChat.id)
+            if (!isUserInGroup(user.id, group)) {
+              toast({
+                title: "Access denied",
+                description: "You are not a member of this group",
+                variant: "destructive",
+              })
+              setActiveChat(null)
+              return
+            }
+
+            setMessages(group.messages)
+          } catch (error) {
+            console.error("Error loading group:", error)
             toast({
-              title: "Access denied",
-              description: "You are not a member of this group",
+              title: "Error",
+              description: "Failed to load group",
               variant: "destructive",
             })
             setActiveChat(null)
-            return
+          }
+        } else {
+          // For private chats
+          try {
+            // Get or create private chat
+            const chat = await api.getPrivateChat(token, user.id, activeChat.id)
+
+            // Store the chat ID for WebSocket connection
+            setPrivateChatIds((prev) => ({
+              ...prev,
+              [activeChat.id]: chat.id,
+            }))
+
+            setMessages(chat.messages)
+          } catch (error) {
+            console.error("Error loading private chat:", error)
+            toast({
+              title: "Error",
+              description: "Failed to load messages",
+              variant: "destructive",
+            })
+            setActiveChat(null)
           }
         }
-
-        const chatMessages =
-          activeChat.type === "private_chat"
-            ? await mockApi.getPrivateMessages(user.id, activeChat.id)
-            : await mockApi.getGroupMessages(activeChat.id)
-
-        setMessages(chatMessages)
-        setActiveChatId(
-          activeChat.type === "private_chat" ? `private_${user.id}_${activeChat.id}` : `group_${activeChat.id}`,
-        )
       } catch (error) {
         console.error("Error loading messages:", error)
         toast({
@@ -117,40 +178,54 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
 
     loadMessages()
-  }, [activeChat, user])
+  }, [activeChat, user, token])
 
   const refreshData = useCallback(async () => {
-    if (!user) return
+    if (!user || !token) return
 
     try {
-      // Refresh messages if there's an active chat
-      if (activeChat) {
-        const chatMessages =
-          activeChat.type === "private_chat"
-            ? await mockApi.getPrivateMessages(user.id, activeChat.id)
-            : await mockApi.getGroupMessages(activeChat.id)
-
-        setMessages(chatMessages)
-      }
-
       // Refresh users and groups
-      const [updatedUsers, updatedGroups] = await Promise.all([mockApi.getAllUsers(), mockApi.getGroups()])
+      const [updatedUsers, updatedGroups] = await Promise.all([api.getAllUsers(token), api.getGroups(token)])
+
       setUsers(updatedUsers)
       setGroups(updatedGroups)
+
+      // Refresh messages if there's an active chat
+      if (activeChat) {
+        if (activeChat.type === "group") {
+          const group = await api.getGroupById(token, activeChat.id)
+          setMessages(group.messages)
+        } else {
+          const chat = await api.getPrivateChat(token, user.id, activeChat.id)
+          setMessages(chat.messages)
+        }
+      }
     } catch (error) {
       console.error("Error refreshing data:", error)
     }
-  }, [activeChat, user])
+  }, [activeChat, user, token])
 
   const sendMessage = async (content: string) => {
-    if (!activeChat || !user || isSending) return
+    if (!activeChat || !user || !token || isSending) return
 
     try {
       setIsSending(true)
-      const newMessage =
-        activeChat.type === "private_chat"
-          ? await mockApi.sendPrivateMessage(user.id, activeChat.id, content)
-          : await mockApi.sendGroupMessage(activeChat.id, user.id, content)
+
+      // Send message via WebSocket for real-time delivery
+      webSocketService.sendMessage(content)
+
+      // Also send via REST API for persistence
+      let newMessage: Message
+
+      if (activeChat.type === "group") {
+        newMessage = await api.sendGroupMessage(token, activeChat.id, content)
+      } else {
+        const chatId = privateChatIds[activeChat.id]
+        if (!chatId) {
+          throw new Error("Private chat ID not found")
+        }
+        newMessage = await api.sendPrivateMessage(token, chatId, content)
+      }
 
       // Update messages optimistically
       setMessages((prev) => {
@@ -172,20 +247,23 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const editMessage = async (messageId: string, newContent: string) => {
-    if (!activeChat || !user || !activeChatId) return
+    if (!activeChat || !user || !token) return
 
     try {
-      await mockApi.editMessage(
-        activeChat.type === "private_chat" ? "private" : "group",
-        activeChat.type === "private_chat" ? (await mockApi.getPrivateChat(user.id, activeChat.id)).id : activeChat.id,
-        messageId,
-        newContent,
-      )
+      let updatedMessage: Message
 
-      // Update the message in the UI optimistically
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === messageId ? { ...msg, content: newContent, edited: true } : msg)),
-      )
+      if (activeChat.type === "group") {
+        updatedMessage = await api.editGroupMessage(token, activeChat.id, messageId, newContent)
+      } else {
+        const chatId = privateChatIds[activeChat.id]
+        if (!chatId) {
+          throw new Error("Private chat ID not found")
+        }
+        updatedMessage = await api.editPrivateMessage(token, chatId, messageId, newContent)
+      }
+
+      // Update the message in the UI
+      setMessages((prev) => prev.map((msg) => (msg.id === messageId ? updatedMessage : msg)))
 
       toast({
         title: "Message edited",
@@ -203,16 +281,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const deleteMessage = async (messageId: string) => {
-    if (!activeChat || !user || !activeChatId) return
+    if (!activeChat || !user || !token) return
 
     try {
-      await mockApi.deleteMessage(
-        activeChat.type === "private_chat" ? "private" : "group",
-        activeChat.type === "private_chat" ? (await mockApi.getPrivateChat(user.id, activeChat.id)).id : activeChat.id,
-        messageId,
-      )
+      if (activeChat.type === "group") {
+        await api.deleteGroupMessage(token, activeChat.id, messageId)
+      } else {
+        const chatId = privateChatIds[activeChat.id]
+        if (!chatId) {
+          throw new Error("Private chat ID not found")
+        }
+        await api.deletePrivateMessage(token, chatId, messageId)
+      }
 
-      // Update the message in the UI optimistically
+      // Update the message in the UI
       setMessages((prev) => prev.map((msg) => (msg.id === messageId ? { ...msg, deleted: true } : msg)))
 
       toast({
@@ -231,10 +313,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const createGroup = async (name: string) => {
-    if (!user) return
+    if (!user || !token) return
 
     try {
-      const newGroup = await mockApi.createGroup(name, user.id)
+      const newGroup = await api.createGroup(token, name)
       setGroups((prev) => [...prev, newGroup])
 
       toast({
@@ -255,13 +337,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const joinGroup = async (groupId: string) => {
-    if (!user) return
+    if (!user || !token) return
 
     try {
-      await mockApi.joinGroup(groupId, user.id)
+      await api.joinGroup(token, groupId)
 
       // Refresh groups to get updated member list
-      const updatedGroups = await mockApi.getGroups()
+      const updatedGroups = await api.getGroups(token)
       setGroups(updatedGroups)
 
       toast({
@@ -282,11 +364,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const addMemberToGroup = async (groupId: string, userId: string) => {
+    if (!token) return
+
     try {
-      await mockApi.addMemberToGroup(groupId, userId)
+      // This is a placeholder since the backend doesn't have a direct endpoint
+      // We'll use the join group endpoint which adds the user to the group
+      await api.joinGroup(token, groupId)
 
       // Refresh groups to get updated member list
-      const updatedGroups = await mockApi.getGroups()
+      const updatedGroups = await api.getGroups(token)
       setGroups(updatedGroups)
 
       toast({
@@ -304,8 +390,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const getGroupById = async (groupId: string) => {
+    if (!token) return undefined
+
     try {
-      return await mockApi.getGroupById(groupId)
+      return await api.getGroupById(token, groupId)
     } catch (error) {
       console.error("Error fetching group:", error)
       return undefined
@@ -313,8 +401,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }
 
   const getGroupMembers = async (groupId: string) => {
+    if (!token) return []
+
     try {
-      return await mockApi.getGroupMembers(groupId)
+      const group = await api.getGroupById(token, groupId)
+      // Map member IDs to user objects
+      return users.filter((user) => group.members.includes(user.id))
     } catch (error) {
       console.error("Error fetching group members:", error)
       return []
@@ -365,6 +457,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     messages,
     isLoading,
     isSending,
+    connectionStatus,
     setActiveChat: setActiveChatWithCheck,
     sendMessage,
     editMessage,
