@@ -1,9 +1,8 @@
 import type { User, Message, GroupChat, PrivateChat } from "@/types"
+import { toGMT7ISOString } from "@/lib/utils"
 
-// Base API URL - change this to your backend URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-// Helper function to handle API responses
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
@@ -12,21 +11,13 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>
 }
 
-// Helper function to get auth header
 function getAuthHeader(token?: string): HeadersInit {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  }
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`
-  }
-
+  const headers: HeadersInit = { "Content-Type": "application/json" }
+  if (token) headers["Authorization"] = `Bearer ${token}`
   return headers
 }
 
 export const api = {
-  // Auth
   register: async (token: string, name: string): Promise<any> => {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
@@ -36,14 +27,9 @@ export const api = {
     return handleResponse(response)
   },
 
-  // User
   getCurrentUser: async (token: string): Promise<User> => {
-    const response = await fetch(`${API_URL}/users/me`, {
-      headers: getAuthHeader(token),
-    })
+    const response = await fetch(`${API_URL}/users/me`, { headers: getAuthHeader(token) })
     const data = await handleResponse<any>(response)
-
-    // Transform backend user to frontend user format
     return {
       id: data.uid,
       username: data.name,
@@ -53,12 +39,8 @@ export const api = {
   },
 
   getActiveUsers: async (token: string): Promise<User[]> => {
-    const response = await fetch(`${API_URL}/users/active`, {
-      headers: getAuthHeader(token),
-    })
+    const response = await fetch(`${API_URL}/users/active`, { headers: getAuthHeader(token) })
     const users = await handleResponse<any[]>(response)
-
-    // Transform backend users to frontend user format
     return users.map((user) => ({
       id: user.uid,
       username: user.name,
@@ -67,11 +49,7 @@ export const api = {
     }))
   },
 
-  getAllUsers: async (token: string): Promise<User[]> => {
-    // Note: Backend doesn't have a direct endpoint for all users
-    // We'll need to implement this on the backend or use active users for now
-    return api.getActiveUsers(token)
-  },
+  getAllUsers: async (token: string): Promise<User[]> => api.getActiveUsers(token),
 
   updateUserStatus: async (token: string, status: string): Promise<User> => {
     const response = await fetch(`${API_URL}/users`, {
@@ -80,7 +58,6 @@ export const api = {
       body: JSON.stringify({ status }),
     })
     const data = await handleResponse<any>(response)
-
     return {
       id: data.user.uid,
       username: data.user.name,
@@ -89,14 +66,9 @@ export const api = {
     }
   },
 
-  // Groups
   getGroups: async (token: string): Promise<GroupChat[]> => {
-    const response = await fetch(`${API_URL}/groups`, {
-      headers: getAuthHeader(token),
-    })
+    const response = await fetch(`${API_URL}/groups`, { headers: getAuthHeader(token) })
     const groups = await handleResponse<any[]>(response)
-
-    // Transform backend groups to frontend format
     return groups.map((group) => ({
       id: group._id,
       name: group.name,
@@ -107,28 +79,17 @@ export const api = {
   },
 
   getGroupById: async (token: string, groupId: string): Promise<GroupChat> => {
-    const response = await fetch(`${API_URL}/groups/${groupId}`, {
-      headers: getAuthHeader(token),
-    })
+    const response = await fetch(`${API_URL}/groups/${groupId}`, { headers: getAuthHeader(token) })
     const group = await handleResponse<any>(response)
-
-    // Transform messages
     const messages: Message[] = (group.messages || []).map((msg: any) => ({
       id: msg._id,
       author: msg.from_user,
       content: msg.content,
-      timestamp: msg.timestamp,
+      timestamp: toGMT7ISOString(msg.timestamp),
       edited: msg.edited,
       deleted: msg.deleted,
     }))
-
-    return {
-      id: group._id,
-      name: group.name,
-      creator: group.creator,
-      members: group.members,
-      messages,
-    }
+    return { id: group._id, name: group.name, creator: group.creator, members: group.members, messages }
   },
 
   createGroup: async (token: string, name: string): Promise<GroupChat> => {
@@ -138,14 +99,7 @@ export const api = {
       body: JSON.stringify({ name }),
     })
     const group = await handleResponse<any>(response)
-
-    return {
-      id: group._id,
-      name: group.name,
-      creator: group.creator,
-      members: group.members,
-      messages: [],
-    }
+    return { id: group._id, name: group.name, creator: group.creator, members: group.members, messages: [] }
   },
 
   joinGroup: async (token: string, groupId: string): Promise<GroupChat> => {
@@ -154,7 +108,6 @@ export const api = {
       headers: getAuthHeader(token),
     })
     const group = await handleResponse<any>(response)
-
     return {
       id: group._id,
       name: group.name,
@@ -176,12 +129,11 @@ export const api = {
       body: JSON.stringify({ content }),
     })
     const msg = await handleResponse<any>(response)
-
     return {
       id: msg._id,
       author: msg.from_user,
       content: msg.content,
-      timestamp: msg.timestamp,
+      timestamp: toGMT7ISOString(msg.timestamp),
       edited: msg.edited,
       deleted: msg.deleted,
     }
@@ -194,12 +146,11 @@ export const api = {
       body: JSON.stringify({ content }),
     })
     const msg = await handleResponse<any>(response)
-
     return {
       id: msg._id,
       author: msg.from_user,
       content: msg.content,
-      timestamp: msg.timestamp,
+      timestamp: toGMT7ISOString(msg.timestamp),
       edited: msg.edited,
       deleted: msg.deleted,
     }
@@ -211,48 +162,33 @@ export const api = {
       headers: getAuthHeader(token),
     })
     const result = await handleResponse<any>(response)
-
     return {
       id: result.data._id,
       author: result.data.from_user,
       content: result.data.content,
-      timestamp: result.data.timestamp,
+      timestamp: toGMT7ISOString(result.data.timestamp),
       edited: result.data.edited,
       deleted: result.data.deleted,
     }
   },
 
-  // Private Chats
   getPrivateChat: async (token: string, userId1: string, userId2: string): Promise<PrivateChat> => {
-    // First try to create/get the chat
-    try {
-      const response = await fetch(`${API_URL}/private-chats`, {
-        method: "POST",
-        headers: getAuthHeader(token),
-        body: JSON.stringify({ other_uid: userId2 }),
-      })
-      const result = await handleResponse<any>(response)
-      const chat = result.chat
-
-      // Transform messages
-      const messages: Message[] = (chat.messages || []).map((msg: any) => ({
-        id: msg._id,
-        author: msg.from_user,
-        content: msg.content,
-        timestamp: msg.timestamp,
-        edited: msg.edited,
-        deleted: msg.deleted,
-      }))
-
-      return {
-        id: chat._id,
-        members: chat.members,
-        messages,
-      }
-    } catch (error) {
-      console.error("Error getting private chat:", error)
-      throw error
-    }
+    const response = await fetch(`${API_URL}/private-chats`, {
+      method: "POST",
+      headers: getAuthHeader(token),
+      body: JSON.stringify({ other_uid: userId2 }),
+    })
+    const result = await handleResponse<any>(response)
+    const chat = result.chat
+    const messages: Message[] = (chat.messages || []).map((msg: any) => ({
+      id: msg._id,
+      author: msg.from_user,
+      content: msg.content,
+      timestamp: toGMT7ISOString(msg.timestamp),
+      edited: msg.edited,
+      deleted: msg.deleted,
+    }))
+    return { id: chat._id, members: chat.members, messages }
   },
 
   getPrivateMessages: async (token: string, userId1: string, userId2: string): Promise<Message[]> => {
@@ -267,12 +203,11 @@ export const api = {
       body: JSON.stringify({ content }),
     })
     const msg = await handleResponse<any>(response)
-
     return {
       id: msg._id,
       author: msg.from_user,
       content: msg.content,
-      timestamp: msg.timestamp,
+      timestamp: toGMT7ISOString(msg.timestamp),
       edited: msg.edited,
       deleted: msg.deleted,
     }
@@ -285,12 +220,11 @@ export const api = {
       body: JSON.stringify({ content }),
     })
     const msg = await handleResponse<any>(response)
-
     return {
       id: msg._id,
       author: msg.from_user,
       content: msg.content,
-      timestamp: msg.timestamp,
+      timestamp: toGMT7ISOString(msg.timestamp),
       edited: msg.edited,
       deleted: msg.deleted,
     }
@@ -302,12 +236,11 @@ export const api = {
       headers: getAuthHeader(token),
     })
     const result = await handleResponse<any>(response)
-
     return {
       id: result.data._id,
       author: result.data.from_user,
       content: result.data.content,
-      timestamp: result.data.timestamp,
+      timestamp: toGMT7ISOString(result.data.timestamp),
       edited: result.data.edited,
       deleted: result.data.deleted,
     }

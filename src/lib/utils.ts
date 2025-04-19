@@ -47,6 +47,14 @@ export function formatDate(timestamp: string): string {
   }
 }
 
+export function toGMT7ISOString(dateString: string): string {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "";
+  // Add 7 hours (7 * 60 * 60 * 1000 ms)
+  date.setHours(date.getHours() + 7);
+  return date.toISOString();
+}
+
 
 export function getUserName(userId: string, currentUser: any, users: any[]): string {
   if (userId === currentUser.id) return "You"
