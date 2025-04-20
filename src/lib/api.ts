@@ -245,4 +245,17 @@ export const api = {
       deleted: result.data.deleted,
     }
   },
+
+  getInactiveUsers: async (token: string): Promise<User[]> => {
+    const response = await fetch(`${API_URL}/users/inactive`, {
+      headers: getAuthHeader(token),
+    })
+    const users = await handleResponse<any[]>(response)
+    return users.map((user) => ({
+      id: user.uid,
+      username: user.name,
+      email: user.email,
+      status: user.status.toLowerCase(),
+    }))
+  },
 }
