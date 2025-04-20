@@ -41,30 +41,44 @@ class WebSocketService {
 
       this.socket.onmessage = (event) => {
         try {
-          // Parse the message - backend sends text in format "userId: message"
-          // We need to parse this into our Message format
-          const text = event.data
-          const colonIndex = text.indexOf(":")
+          const text = event.data as string;
 
+          // ✅ Handle typing events BEFORE parsing as a chat message
+          if (text.startsWith("TYPING:") || text.startsWith("STOP_TYPING:")) {
+            // We'll handle typing separately in ChatWindow
+            const message: Message = {
+              id: Date.now().toString(),
+              author: "system",
+              content: text,
+              timestamp: new Date().toISOString(),
+              edited: false,
+              deleted: false,
+            };
+            this.notifyMessageHandlers(chatId, message);
+            return;
+          }
+
+          // 🛑 Parse regular chat messages only
+          const colonIndex = text.indexOf(":");
           if (colonIndex > 0) {
-            const author = text.substring(0, colonIndex).trim()
-            const content = text.substring(colonIndex + 1).trim()
+            const author = text.substring(0, colonIndex).trim();
+            const content = text.substring(colonIndex + 1).trim();
 
             const message: Message = {
-              id: Date.now().toString(), // Generate a temporary ID
+              id: Date.now().toString(),
               author,
               content,
               timestamp: new Date().toISOString(),
               edited: false,
               deleted: false,
-            }
+            };
 
-            this.notifyMessageHandlers(chatId, message)
+            this.notifyMessageHandlers(chatId, message);
           }
         } catch (error) {
-          console.error("Error parsing WebSocket message:", error)
+          console.error("Error parsing WebSocket message:", error);
         }
-      }
+      };
 
       this.socket.onclose = () => {
         console.log("WebSocket disconnected")
@@ -158,6 +172,18 @@ class WebSocketService {
       console.log("Attempting to reconnect WebSocket...")
       this.connect(chatId)
     }, 5000) // Reconnect after 5 seconds
+  }
+
+  public sendTyping(chatId: string, username: string) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(`TYPING:${chatId}:${username}`)
+    }
+  }
+
+  public sendStopTyping(chatId: string, username: string) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(`STOP_TYPING:${chatId}:${username}`)
+    }
   }
 }
 

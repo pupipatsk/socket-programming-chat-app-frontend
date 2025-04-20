@@ -19,6 +19,7 @@ import {
   getUserName,
   groupMessagesByDate,
 } from "@/lib/utils";
+import webSocketService from "@/lib/websocket";
 
 interface ChatWindowProps {
   messages: Message[];
@@ -38,7 +39,9 @@ export function deduplicateMessages(messages: Message[]): Message[] {
   const result: Message[] = [];
 
   for (const msg of messages) {
-    const key = `${msg.author}-${msg.content.trim()}-${new Date(msg.timestamp).toISOString().slice(0, 19)}`; // to seconds
+    const key = `${msg.author}-${msg.content.trim()}-${new Date(msg.timestamp)
+      .toISOString()
+      .slice(0, 19)}`; // to seconds
     if (!seen.has(key)) {
       seen.add(key);
       result.push(msg);
@@ -58,7 +61,6 @@ export function ChatWindow({
   onEditMessage,
   onDeleteMessage,
   isMobile = false,
-  isSmallMobile = false,
 }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -66,7 +68,7 @@ export function ChatWindow({
   const [editContent, setEditContent] = useState("");
   const [autoScroll, setAutoScroll] = useState(true);
   const [prevMessagesLength, setPrevMessagesLength] = useState(0);
-
+  const typingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
   useEffect(() => {
     const handleScroll = () => {
       if (!scrollAreaRef.current) return;
@@ -150,6 +152,49 @@ export function ChatWindow({
   const uniqueMessages = deduplicateMessages(messages);
   const messagesByDate = groupMessagesByDate(uniqueMessages);
 
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!activeChat) return;
+
+    const handleTyping = (msg: string) => {
+      const parts = msg.split(":");
+      const [, chatId, username] = parts;
+
+      if (chatId === activeChat?.id && username !== currentUser.username) {
+        setTypingUsers((prev) =>
+          prev.includes(username) ? prev : [...prev, username]
+        );
+
+        if (typingTimeouts.current[username]) {
+          clearTimeout(typingTimeouts.current[username]);
+        }
+
+        typingTimeouts.current[username] = setTimeout(() => {
+          setTypingUsers((prev) => prev.filter((u) => u !== username));
+          delete typingTimeouts.current[username];
+        }, 3000);
+      }
+    };
+
+    const unsubscribe = webSocketService.subscribeToMessages(
+      activeChat.id,
+      (message: Message) => {
+        if (message.content.startsWith("TYPING:"))
+          handleTyping(message.content);
+        if (message.content.startsWith("STOP_TYPING:"))
+          handleTyping(message.content);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+      Object.values(typingTimeouts.current).forEach(clearTimeout);
+      typingTimeouts.current = {};
+      setTypingUsers([]);
+    };
+  }, [activeChat]);
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -193,6 +238,12 @@ export function ChatWindow({
                           </div>
 
                           {uniqueMessages.map((message) => {
+                            if (
+                              message.content.startsWith("TYPING:") ||
+                              message.content.startsWith("STOP_TYPING:")
+                            ) {
+                              return null;
+                            }
                             const isCurrentUser =
                               message.author === currentUser.id;
                             const isDeleted = message.deleted;
@@ -316,6 +367,11 @@ export function ChatWindow({
                         </div>
                       );
                     }
+                  )}
+                  {typingUsers.length > 0 && (
+                    <div className="px-4 py-1 text-sm italic text-black/50">
+                      {typingUsers.join(", ")} is typing...
+                    </div>
                   )}
                   <div ref={scrollRef} className="h-1" />
                 </div>
