@@ -1,24 +1,30 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import type { User, GroupChat } from "@/types"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { mockApi } from "@/lib/mock-api"
-import { UserPlus, Search } from "lucide-react"
+import { useState, useEffect } from "react";
+import type { User, GroupChat } from "@/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { UserPlus, Search } from "lucide-react";
 
 interface GroupDetailsProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  group: GroupChat | null
-  currentUser: User
-  allUsers: User[]
-  onAddMember: (groupId: string, userId: string) => Promise<void>
-  showAddMembersSection?: boolean
-  isMobile?: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  group: GroupChat | null;
+  currentUser: User;
+  allUsers: User[];
+  onAddMember: (groupId: string, userId: string) => Promise<void>;
+  showAddMembersSection?: boolean;
+  isMobile?: boolean;
 }
 
 export function GroupDetails({
@@ -31,46 +37,57 @@ export function GroupDetails({
   showAddMembersSection = false,
   isMobile = false,
 }: GroupDetailsProps) {
-  const [members, setMembers] = useState<User[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isCreator, setIsCreator] = useState(false)
-  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false)
+  const { token } = useAuth();
+  const [members, setMembers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCreator, setIsCreator] = useState(false);
+  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (group && open) {
+    if (group && open && token) {
       const fetchMembers = async () => {
         try {
-          const groupMembers = await mockApi.getGroupMembers(group.id)
-          setMembers(groupMembers)
-          setIsCreator(group.creator === currentUser.id)
+          const groupDetails = await api.getGroupById(token, group.id);
+          const groupMembers = allUsers.filter((user) =>
+            groupDetails.members.includes(user.id)
+          );
 
-          // Automatically open the add member dialog if showAddMembersSection is true
-          if (showAddMembersSection && group.creator === currentUser.id) {
-            setAddMemberDialogOpen(true)
+          setMembers(groupMembers);
+          setIsCreator(groupDetails.creator === currentUser.id);
+
+          if (
+            showAddMembersSection &&
+            groupDetails.creator === currentUser.id
+          ) {
+            setAddMemberDialogOpen(true);
           }
         } catch (error) {
-          console.error("Failed to fetch group members:", error)
+          console.error("Failed to fetch group members:", error);
         }
-      }
+      };
 
-      fetchMembers()
+      fetchMembers();
     }
-  }, [group, open, currentUser.id, showAddMembersSection])
+  }, [group, open, token, currentUser.id, showAddMembersSection, allUsers]);
 
-  if (!group) return null
+  if (!group) return null;
 
-  const onlineMembers = members.filter((member) => member.status === "online")
-  const offlineMembers = members.filter((member) => member.status === "offline")
+  const onlineMembers = members.filter((member) => member.status === "online");
+  const offlineMembers = members.filter(
+    (member) => member.status === "offline"
+  );
 
   const filteredUsers = allUsers.filter(
     (user) =>
       !members.some((member) => member.id === user.id) &&
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={isMobile ? "w-[95%] max-w-[500px]" : "sm:max-w-[500px]"}>
+      <DialogContent
+        className={isMobile ? "w-[95%] max-w-[500px]" : "sm:max-w-[500px]"}
+      >
         <DialogHeader>
           <DialogTitle>{group.name} - Group Details</DialogTitle>
         </DialogHeader>
@@ -115,14 +132,18 @@ export function GroupDetails({
                       <div className="flex items-center">
                         <div
                           className={`h-2 w-2 rounded-full ${
-                            member.status === "online" ? "bg-green-500" : "bg-gray-400"
+                            member.status === "online"
+                              ? "bg-green-500"
+                              : "bg-gray-400"
                           } mr-2`}
                         />
                         <span>{member.username}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         {member.id === group.creator && (
-                          <span className="text-xs bg-black/10 px-2 py-1 rounded">Creator</span>
+                          <span className="text-xs bg-black/10 px-2 py-1 rounded">
+                            Creator
+                          </span>
                         )}
                       </div>
                     </div>
@@ -146,13 +167,17 @@ export function GroupDetails({
                         </div>
                         <div className="flex items-center gap-2">
                           {member.id === group.creator && (
-                            <span className="text-xs bg-black/10 px-2 py-1 rounded">Creator</span>
+                            <span className="text-xs bg-black/10 px-2 py-1 rounded">
+                              Creator
+                            </span>
                           )}
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-4 text-black/40">No online members</div>
+                    <div className="text-center py-4 text-black/40">
+                      No online members
+                    </div>
                   )}
                 </div>
               </ScrollArea>
@@ -173,13 +198,17 @@ export function GroupDetails({
                         </div>
                         <div className="flex items-center gap-2">
                           {member.id === group.creator && (
-                            <span className="text-xs bg-black/10 px-2 py-1 rounded">Creator</span>
+                            <span className="text-xs bg-black/10 px-2 py-1 rounded">
+                              Creator
+                            </span>
                           )}
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-4 text-black/40">No offline members</div>
+                    <div className="text-center py-4 text-black/40">
+                      No offline members
+                    </div>
                   )}
                 </div>
               </ScrollArea>
@@ -187,8 +216,13 @@ export function GroupDetails({
           </Tabs>
         </div>
 
-        <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
-          <DialogContent className={isMobile ? "w-[95%] max-w-md" : "sm:max-w-[425px]"}>
+        <Dialog
+          open={addMemberDialogOpen}
+          onOpenChange={setAddMemberDialogOpen}
+        >
+          <DialogContent
+            className={isMobile ? "w-[95%] max-w-md" : "sm:max-w-[425px]"}
+          >
             <DialogHeader>
               <DialogTitle>Add Members to {group.name}</DialogTitle>
             </DialogHeader>
@@ -215,7 +249,9 @@ export function GroupDetails({
                         <div className="flex items-center">
                           <div
                             className={`h-2 w-2 rounded-full ${
-                              user.status === "online" ? "bg-green-500" : "bg-gray-400"
+                              user.status === "online"
+                                ? "bg-green-500"
+                                : "bg-gray-400"
                             } mr-2`}
                           />
                           <span>{user.username}</span>
@@ -224,8 +260,8 @@ export function GroupDetails({
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            onAddMember(group.id, user.id)
-                            setSearchTerm("")
+                            onAddMember(group.id, user.id);
+                            setSearchTerm("");
                           }}
                           className="h-8 hover:bg-black/5 touch-target"
                         >
@@ -236,7 +272,9 @@ export function GroupDetails({
                     ))
                   ) : (
                     <div className="text-center py-4 text-black/40">
-                      {searchTerm ? "No users found" : "All users are already members"}
+                      {searchTerm
+                        ? "No users found"
+                        : "All users are already members"}
                     </div>
                   )}
                 </div>
@@ -246,5 +284,5 @@ export function GroupDetails({
         </Dialog>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

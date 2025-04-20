@@ -49,7 +49,13 @@ export const api = {
     }))
   },
 
-  getAllUsers: async (token: string): Promise<User[]> => api.getActiveUsers(token),
+  getAllUsers: async (token: string): Promise<User[]> => {
+    const [active, inactive] = await Promise.all([
+      api.getActiveUsers(token),
+      api.getInactiveUsers(token),
+    ])
+    return [...active, ...inactive]
+  },
 
   updateUserStatus: async (token: string, status: string): Promise<User> => {
     const response = await fetch(`${API_URL}/users`, {
