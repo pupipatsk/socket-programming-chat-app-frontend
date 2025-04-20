@@ -78,6 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("ID Token:", idToken)
       setToken(idToken)
 
+      await api.updateUserStatus(idToken, "Online")
+
       // Get user profile from backend
       const userProfile = await api.getCurrentUser(idToken)
       setUser(userProfile)
@@ -175,6 +177,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      if (token) {
+        await api.updateUserStatus(token, "Offline") // Force offline
+      }
+
       await firebaseSignOut()
       setUser(null)
       setToken(null)
