@@ -41,11 +41,10 @@ class WebSocketService {
 
       this.socket.onmessage = (event) => {
         try {
-          const text = event.data as string;
-
-          // ✅ Handle typing events BEFORE parsing as a chat message
+          const text = event.data.trim()
+      
+          // Handle typing events
           if (text.startsWith("TYPING:") || text.startsWith("STOP_TYPING:")) {
-            // We'll handle typing separately in ChatWindow
             const message: Message = {
               id: Date.now().toString(),
               author: "system",
@@ -53,17 +52,39 @@ class WebSocketService {
               timestamp: new Date().toISOString(),
               edited: false,
               deleted: false,
-            };
-            this.notifyMessageHandlers(chatId, message);
-            return;
+            }
+            this.notifyMessageHandlers(chatId, message)
+            return
           }
-
-          // 🛑 Parse regular chat messages only
-          const colonIndex = text.indexOf(":");
+      
+          // New format: JSON
+          if (text.startsWith("{")) {
+            const raw = JSON.parse(text)
+      
+            // Ignore if the message is sent by this user
+            if (raw.author === this.userId) return
+      
+            const message: Message = {
+              id: raw.id,
+              author: raw.author,
+              content: raw.content,
+              timestamp: raw.timestamp,
+              edited: raw.edited || false,
+              deleted: raw.deleted || false,
+            }
+      
+            this.notifyMessageHandlers(chatId, message)
+            return
+          }
+      
+          // Fallback: legacy "userId: message"
+          const colonIndex = text.indexOf(":")
           if (colonIndex > 0) {
-            const author = text.substring(0, colonIndex).trim();
-            const content = text.substring(colonIndex + 1).trim();
-
+            const author = text.substring(0, colonIndex).trim()
+            const content = text.substring(colonIndex + 1).trim()
+      
+            if (author === this.userId) return
+      
             const message: Message = {
               id: Date.now().toString(),
               author,
@@ -71,14 +92,14 @@ class WebSocketService {
               timestamp: new Date().toISOString(),
               edited: false,
               deleted: false,
-            };
-
-            this.notifyMessageHandlers(chatId, message);
+            }
+      
+            this.notifyMessageHandlers(chatId, message)
           }
         } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
+          console.error("Error parsing WebSocket message:", error)
         }
-      };
+      }      
 
       this.socket.onclose = () => {
         console.log("WebSocket disconnected")
@@ -109,14 +130,26 @@ class WebSocketService {
     }
   }
 
-  public sendMessage(message: string): boolean {
+  public sendMessage(content: string): boolean {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       console.error("Cannot send message: WebSocket not connected")
       return false
     }
 
+    if (!this.userId) {
+      console.error("Cannot send message: user ID not set")
+      return false
+    }
+
     try {
-      this.socket.send(message)
+      const payload = JSON.stringify({
+        type: "chat",
+        content,
+        author: this.userId,
+        timestamp: new Date().toISOString(),
+      })
+
+      this.socket.send(payload)
       return true
     } catch (error) {
       console.error("Error sending message:", error)
