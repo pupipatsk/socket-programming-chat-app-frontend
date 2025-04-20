@@ -211,6 +211,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       setIsSending(true)
 
+      const tempId = `temp-${Date.now()}`
+      const optimisticMessage: Message = {
+        id: tempId,
+        content,
+        author: user.id,
+        timestamp: new Date().toISOString(),
+        edited: false,
+        deleted: false,
+      }
+
+      setMessages((prev) => [...prev, optimisticMessage])
+
       // Send message via WebSocket for real-time delivery
       webSocketService.sendMessage(content)
 
@@ -227,13 +239,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         newMessage = await api.sendPrivateMessage(token, chatId, content)
       }
 
-      // Update messages optimistically
-      setMessages((prev) => {
-        if (!prev.some((msg) => msg.id === newMessage.id)) {
-          return [...prev, newMessage]
-        }
-        return prev
-      })
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === tempId ? newMessage : msg))
+      )
+      
     } catch (error) {
       console.error("Error sending message:", error)
       toast({
