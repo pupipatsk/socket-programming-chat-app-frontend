@@ -10,7 +10,7 @@ interface ChatLayoutProps {
   children: React.ReactNode
   user: User
   onLogout: () => void
-  connectionStatus: string
+  connectionStatus: string // still passed but unused now
   onToggleSidebar?: () => void
   isMobile?: boolean
   showSidebar?: boolean
@@ -20,7 +20,7 @@ export function ChatLayout({
   children,
   user,
   onLogout,
-  connectionStatus,
+  connectionStatus, // not used anymore for status display
   onToggleSidebar,
   isMobile,
   showSidebar,
@@ -42,14 +42,14 @@ export function ChatLayout({
             <span className="mr-2">Status:</span>
             <span
               className={
-                connectionStatus === "Connected"
+                user.status === "online"
                   ? "text-green-600"
-                  : connectionStatus
-                    ? "text-red-600"
-                    : "text-gray-600"
+                  : user.status === "offline"
+                  ? "text-red-600"
+                  : "text-gray-600"
               }
             >
-              {connectionStatus || "Unknown"}
+              {user.status || "Unknown"}
             </span>
           </div>
         </div>
