@@ -122,6 +122,18 @@ export function ChatWindow({
     }
   };
 
+  function tryExtractContent(content: string): string {
+    try {
+      const parsed = JSON.parse(content);
+      if (typeof parsed === "object" && parsed.content) {
+        return parsed.content;
+      }
+    } catch {
+      // not a JSON string, return as-is
+    }
+    return content;
+  }
+
   const handleStartEdit = (message: Message) => {
     setEditingMessage(message.id);
     setEditContent(message.content);
@@ -329,6 +341,8 @@ export function ChatWindow({
                                     >
                                       {isDeleted
                                         ? "(Message deleted)"
+                                        : typeof message.content === "string"
+                                        ? tryExtractContent(message.content)
                                         : message.content}
                                     </div>
                                   )}
