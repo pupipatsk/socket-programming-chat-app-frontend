@@ -1,51 +1,76 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Send } from "lucide-react"
+import type React from "react";
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Send } from "lucide-react";
+import webSocketService from "@/lib/websocket";
+import { useChat } from "@/contexts/chat-context";
+import { useAuth } from "@/contexts/auth-context";
 
 interface ChatInputProps {
-  onSendMessage: (content: string) => void
-  disabled?: boolean
-  isMobile?: boolean
+  onSendMessage: (content: string) => void;
+  disabled?: boolean;
+  isMobile?: boolean;
 }
 
-export function ChatInput({ onSendMessage, disabled = false, isMobile = false }: ChatInputProps) {
-  const [message, setMessage] = useState("")
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+export function ChatInput({
+  onSendMessage,
+  disabled = false,
+  isMobile = false,
+}: ChatInputProps) {
+  const [message, setMessage] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { activeChat } = useChat();
+  const { user } = useAuth();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-resize textarea based on content
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = "auto"
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(
+        textareaRef.current.scrollHeight,
+        150
+      )}px`;
     }
-  }, [message])
+  }, [message]);
+
+  const notifyTyping = () => {
+    if (!activeChat || !user) return;
+    webSocketService.sendTyping(activeChat.id, user.username);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      webSocketService.sendStopTyping(activeChat.id, user.username);
+    }, 1500);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (message.trim() && !disabled) {
-      onSendMessage(message.trim())
-      setMessage("")
-
-      // Reset textarea height
+      onSendMessage(message.trim());
+      setMessage("");
       if (textareaRef.current) {
-        textareaRef.current.style.height = "auto"
+        textareaRef.current.style.height = "auto";
       }
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit(e)
+      e.preventDefault();
+      handleSubmit(e);
+    } else {
+      notifyTyping();
     }
-  }
+  };
 
   return (
-    <div className={`p-3 md:p-4 border-t border-black/10 bg-white/5 safe-bottom ${isMobile ? "pb-6" : ""}`}>
+    <div
+      className={`p-3 md:p-4 border-t border-black/10 bg-white/5 safe-bottom ${
+        isMobile ? "pb-6" : ""
+      }`}
+    >
       <form onSubmit={handleSubmit} className="flex items-end gap-2">
         <Textarea
           ref={textareaRef}
@@ -68,5 +93,5 @@ export function ChatInput({ onSendMessage, disabled = false, isMobile = false }:
         </Button>
       </form>
     </div>
-  )
+  );
 }
