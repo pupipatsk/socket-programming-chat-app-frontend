@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { ChatProvider, useChat } from "@/contexts/chat-context";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Menu, X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import type { User } from "@/types";
@@ -230,11 +230,11 @@ function ChatPageContent() {
 }
 
 export default function ChatPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!user) {
+    if (!user && !isLoading) {
       router.push("/");
     }
   }, [user, router]);
