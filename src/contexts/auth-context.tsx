@@ -125,11 +125,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Create user in Firebase
       const firebaseUser = await firebaseSignUp(email, password);
+
+      if (!firebaseUser) {
+        throw new Error("Firebase signup returned no user");
+      }
+
       const idToken = await firebaseUser.getIdToken();
       setToken(idToken);
 
       // Register user in backend
-      // const result = await api.register(idToken, username)
+      await api.register(idToken, username);
 
       // Get user profile
       const userProfile = await api.getCurrentUser(idToken);
