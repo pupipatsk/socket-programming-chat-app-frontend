@@ -42,7 +42,7 @@ export function ChatInput({
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       webSocketService.sendStopTyping(activeChat.id, user.username);
-    }, 3000);
+    }, 1500);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

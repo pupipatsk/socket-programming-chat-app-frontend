@@ -173,17 +173,28 @@ export function ChatWindow({
         typingTimeouts.current[username] = setTimeout(() => {
           setTypingUsers((prev) => prev.filter((u) => u !== username));
           delete typingTimeouts.current[username];
-        }, 3000);
+        }, 1500);
       }
     };
 
+    const handleStopTyping = (msg: string) => {
+      const parts = msg.split(":");
+      const [, chatId, username] = parts;
+      if (chatId === activeChat?.id && username !== currentUser.username) {
+        setTypingUsers((prev) => prev.filter((u) => u !== username));
+        if (typingTimeouts.current[username]) {
+          clearTimeout(typingTimeouts.current[username]);
+          delete typingTimeouts.current[username];
+        }
+      }
+    };
     const unsubscribe = webSocketService.subscribeToMessages(
       activeChat.id,
       (message: Message) => {
         if (message.content.startsWith("TYPING:"))
           handleTyping(message.content);
         if (message.content.startsWith("STOP_TYPING:"))
-          handleTyping(message.content);
+          handleStopTyping(message.content);
       }
     );
 
