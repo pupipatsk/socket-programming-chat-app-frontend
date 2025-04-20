@@ -41,7 +41,7 @@ export function GroupDetails({
   const [members, setMembers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreator, setIsCreator] = useState(false);
-  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
+  // const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
   useEffect(() => {
     if (group && open && token) {
@@ -55,12 +55,12 @@ export function GroupDetails({
           setMembers(groupMembers);
           setIsCreator(groupDetails.creator === currentUser.id);
 
-          if (
-            showAddMembersSection &&
-            groupDetails.creator === currentUser.id
-          ) {
-            setAddMemberDialogOpen(true);
-          }
+          // if (
+          //   showAddMembersSection &&
+          //   groupDetails.creator === currentUser.id
+          // ) {
+          //   setAddMemberDialogOpen(true);
+          // }
         } catch (error) {
           console.error("Failed to fetch group members:", error);
         }
@@ -95,7 +95,7 @@ export function GroupDetails({
         <div className="space-y-4 mt-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">Members ({members.length})</h3>
-            {isCreator && (
+            {/* {isCreator && (
               <Button
                 variant="outline"
                 size="sm"
@@ -105,7 +105,7 @@ export function GroupDetails({
                 <UserPlus className="h-4 w-4" />
                 Add Members
               </Button>
-            )}
+            )} */}
           </div>
 
           <Tabs defaultValue="all" className="w-full">
@@ -216,7 +216,7 @@ export function GroupDetails({
           </Tabs>
         </div>
 
-        <Dialog
+        {/* <Dialog
           open={addMemberDialogOpen}
           onOpenChange={setAddMemberDialogOpen}
         >
@@ -281,7 +281,7 @@ export function GroupDetails({
               </ScrollArea>
             </div>
           </DialogContent>
-        </Dialog>
+        </Dialog> */}
       </DialogContent>
     </Dialog>
   );

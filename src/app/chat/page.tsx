@@ -16,6 +16,8 @@ import { ArrowLeft, X } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import type { User } from "@/types";
+import { ChatPageSkeleton } from "@/components/skeleton/chat-page-skeleton";
+
 function ChatPageContent() {
   const { user, logout,token } = useAuth();
   const {
@@ -239,12 +241,8 @@ export default function ChatPage() {
     }
   }, [user, router]);
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-light">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+  if (!user || isLoading) {
+    return <ChatPageSkeleton />;
   }
 
   return (
