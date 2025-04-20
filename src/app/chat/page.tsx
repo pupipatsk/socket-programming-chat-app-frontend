@@ -17,9 +17,10 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import type { User } from "@/types";
 import { ChatPageSkeleton } from "@/components/skeleton/chat-page-skeleton";
+import type { GroupChat } from "@/types";
 
 function ChatPageContent() {
-  const { user, logout,token } = useAuth();
+  const { user, logout, token } = useAuth();
   const {
     users,
     groups,
@@ -36,12 +37,10 @@ function ChatPageContent() {
     joinGroup,
     addMemberToGroup,
     getGroupById,
-    getGroupMembers,
   } = useChat();
 
-
   const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [selectedGroup, setSelectedGroup] = useState<GroupChat | null>(null);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
@@ -108,7 +107,6 @@ function ChatPageContent() {
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
-
 
   if (!user) return null;
   return (
@@ -239,7 +237,7 @@ export default function ChatPage() {
     if (!user && !isLoading) {
       router.push("/");
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   if (!user || isLoading) {
     return <ChatPageSkeleton />;

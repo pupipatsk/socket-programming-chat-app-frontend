@@ -1,26 +1,25 @@
-"use client"
+"use client";
 
-import type React from "react"
-import type { User } from "@/types"
-import { Button } from "@/components/ui/button"
-import { LogOut, Menu } from "lucide-react"
-import Link from "next/link"
+import type React from "react";
+import type { User } from "@/types";
+import { Button } from "@/components/ui/button";
+import { LogOut, Menu } from "lucide-react";
+import Link from "next/link";
 
 interface ChatLayoutProps {
-  children: React.ReactNode
-  user: User
-  onLogout: () => void
-  connectionStatus: string // still passed but unused now
-  onToggleSidebar?: () => void
-  isMobile?: boolean
-  showSidebar?: boolean
+  children: React.ReactNode;
+  user: User;
+  onLogout: () => void;
+  connectionStatus: string; // still passed but unused now
+  onToggleSidebar?: () => void;
+  isMobile?: boolean;
+  showSidebar?: boolean;
 }
 
 export function ChatLayout({
   children,
   user,
   onLogout,
-  connectionStatus, // not used anymore for status display
   onToggleSidebar,
   isMobile,
   showSidebar,
@@ -30,7 +29,12 @@ export function ChatLayout({
       <header className="border-b border-black/10 p-3 md:p-4 flex justify-between items-center bg-white/5 backdrop-blur-md safe-top">
         <div className="flex items-center space-x-2 md:space-x-4">
           {isMobile && !showSidebar && onToggleSidebar && (
-            <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="mr-1 touch-target">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleSidebar}
+              className="mr-1 touch-target"
+            >
               <Menu className="h-5 w-5" />
               <span className="sr-only">Menu</span>
             </Button>
@@ -58,7 +62,12 @@ export function ChatLayout({
             <span className="text-black/60 mr-1">User:</span>
             <span className="font-medium">{user.username}</span>
           </div>
-          <Button variant="ghost" size="icon" onClick={onLogout} className="hover:bg-black/5 touch-target">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onLogout}
+            className="hover:bg-black/5 touch-target"
+          >
             <LogOut className="h-5 w-5" />
             <span className="sr-only">Logout</span>
           </Button>
@@ -66,5 +75,5 @@ export function ChatLayout({
       </header>
       <main className="flex-1 overflow-hidden">{children}</main>
     </div>
-  )
+  );
 }

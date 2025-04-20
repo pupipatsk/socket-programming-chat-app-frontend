@@ -1,47 +1,54 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { useAuth } from "@/contexts/auth-context"
+import type React from "react";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function HomePage() {
-  const [isLogin, setIsLogin] = useState(true)
-  const { login, register, guestLogin, isLoading } = useAuth()
+  const [isLogin, setIsLogin] = useState(true);
+  const { login, register, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
-  })
+  });
 
-  const toggleMode = () => setIsLogin(!isLogin)
+  const toggleMode = () => setIsLogin(!isLogin);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!isLogin && formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match")
-      return
+      alert("Passwords don't match");
+      return;
     }
 
     try {
       if (isLogin) {
-        await login(formData.email, formData.password)
+        await login(formData.email, formData.password);
       } else {
-        await register(formData.username, formData.email, formData.password)
+        await register(formData.username, formData.email, formData.password);
       }
     } catch (error) {
-      console.error("Auth failed:", error)
+      console.error("Auth failed:", error);
     }
-  }
+  };
 
   return (
     <main className="flex min-h-screen bg-gradient-light">
@@ -56,9 +63,13 @@ export default function HomePage() {
       <div className="w-full md:w-1/2 flex items-center justify-center p-4">
         <Card className="w-full max-w-md glass-card animate-fade-in">
           <CardHeader>
-            <CardTitle className="text-2xl font-light">{isLogin ? "Login" : "Create Account"}</CardTitle>
+            <CardTitle className="text-2xl font-light">
+              {isLogin ? "Login" : "Create Account"}
+            </CardTitle>
             <CardDescription>
-              {isLogin ? "Enter your credentials to continue" : "Sign up to join the conversation"}
+              {isLogin
+                ? "Enter your credentials to continue"
+                : "Sign up to join the conversation"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -123,7 +134,13 @@ export default function HomePage() {
               )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (isLogin ? "Logging in..." : "Creating account...") : isLogin ? "Login" : "Register"}
+                {isLoading
+                  ? isLogin
+                    ? "Logging in..."
+                    : "Creating account..."
+                  : isLogin
+                  ? "Login"
+                  : "Register"}
               </Button>
 
               {/* <Button type="button" variant="secondary" className="w-full" onClick={guestLogin} disabled={isLoading}>
@@ -134,7 +151,10 @@ export default function HomePage() {
           <CardFooter className="flex justify-center">
             <p className="text-sm text-black/60">
               {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-              <button onClick={toggleMode} className="text-black font-medium hover:underline ml-1">
+              <button
+                onClick={toggleMode}
+                className="text-black font-medium hover:underline ml-1"
+              >
                 {isLogin ? "Register" : "Login"}
               </button>
             </p>
@@ -142,5 +162,5 @@ export default function HomePage() {
         </Card>
       </div>
     </main>
-  )
+  );
 }

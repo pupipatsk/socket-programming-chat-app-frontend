@@ -1,217 +1,243 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { api } from "@/lib/api"
-import webSocketService from "@/lib/websocket"
-import type { User, GroupChat, Message } from "@/types"
-import { useAuth } from "@/contexts/auth-context"
-import { useToast } from "@/hooks/use-toast"
-import { isUserInGroup } from "@/lib/utils"
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { api } from "@/lib/api";
+import webSocketService from "@/lib/websocket";
+import type { User, GroupChat, Message } from "@/types";
+import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
+import { isUserInGroup } from "@/lib/utils";
 
 interface ActiveChat {
-  type: "private_chat" | "group"
-  id: string
+  type: "private_chat" | "group";
+  id: string;
 }
 
 interface ChatContextType {
-  users: User[]
-  groups: GroupChat[]
-  activeChat: ActiveChat | null
-  messages: Message[]
-  isLoading: boolean
-  isSending: boolean
-  connectionStatus: string
-  setActiveChat: (chat: ActiveChat | null) => void
-  sendMessage: (content: string) => Promise<void>
-  editMessage: (messageId: string, content: string) => Promise<void>
-  deleteMessage: (messageId: string) => Promise<void>
-  createGroup: (name: string) => Promise<void>
-  joinGroup: (groupId: string) => Promise<void>
-  addMemberToGroup: (groupId: string, userId: string) => Promise<void>
-  refreshData: () => Promise<void>
-  getGroupById: (groupId: string) => Promise<GroupChat | undefined>
-  getGroupMembers: (groupId: string) => Promise<User[]>
-  canAccessGroup: (groupId: string) => boolean
+  users: User[];
+  groups: GroupChat[];
+  activeChat: ActiveChat | null;
+  messages: Message[];
+  isLoading: boolean;
+  isSending: boolean;
+  connectionStatus: string;
+  setActiveChat: (chat: ActiveChat | null) => void;
+  sendMessage: (content: string) => Promise<void>;
+  editMessage: (messageId: string, content: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
+  createGroup: (name: string) => Promise<void>;
+  joinGroup: (groupId: string) => Promise<void>;
+  addMemberToGroup: (groupId: string, userId: string) => Promise<void>;
+  refreshData: () => Promise<void>;
+  getGroupById: (groupId: string) => Promise<GroupChat | undefined>;
+  getGroupMembers: (groupId: string) => Promise<User[]>;
+  canAccessGroup: (groupId: string) => boolean;
 }
 
-const ChatContext = createContext<ChatContextType | undefined>(undefined)
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const { user, token } = useAuth()
-  const { toast } = useToast()
-  const [users, setUsers] = useState<User[]>([])
-  const [groups, setGroups] = useState<GroupChat[]>([])
-  const [activeChat, setActiveChat] = useState<ActiveChat | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSending, setIsSending] = useState(false)
-  const [connectionStatus, setConnectionStatus] = useState("Disconnected")
-  const [privateChatIds, setPrivateChatIds] = useState<Record<string, string>>({})
+  const { user, token } = useAuth();
+  const { toast } = useToast();
+  const [users, setUsers] = useState<User[]>([]);
+  const [groups, setGroups] = useState<GroupChat[]>([]);
+  const [activeChat, setActiveChat] = useState<ActiveChat | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState("Disconnected");
+  const [privateChatIds, setPrivateChatIds] = useState<Record<string, string>>(
+    {}
+  );
+  const refreshData = useCallback(async () => {
+    if (!user || !token) return;
 
+    try {
+      const [updatedUsers, updatedGroups] = await Promise.all([
+        api.getAllUsers(token),
+        api.getGroups(token),
+      ]);
+
+      setUsers(updatedUsers);
+      setGroups(updatedGroups);
+
+      if (activeChat) {
+        if (activeChat.type === "group") {
+          const group = await api.getGroupById(token, activeChat.id);
+          setMessages(group.messages);
+        } else {
+          const chat = await api.getPrivateChat(token, user.id, activeChat.id);
+          setMessages(chat.messages);
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    }
+  }, [activeChat, user, token]);
   // Set up WebSocket connection when active chat changes
   useEffect(() => {
-    if (!activeChat || !user || !token) return
+    if (!activeChat || !user || !token) return;
 
     // Set credentials for WebSocket
-    webSocketService.setCredentials(user.id, token)
+    webSocketService.setCredentials(user.id, token);
 
     // Connect to the appropriate chat
-    const chatId = activeChat.type === "group" ? activeChat.id : privateChatIds[activeChat.id]
+    const chatId =
+      activeChat.type === "group"
+        ? activeChat.id
+        : privateChatIds[activeChat.id];
 
     if (chatId) {
-      webSocketService.connect(chatId)
+      webSocketService.connect(chatId);
 
       // Subscribe to messages
-      const unsubscribe = webSocketService.subscribeToMessages(chatId, (message) => {
-        // Only add the message if it's not already in the list
-        setMessages((prev) => {
-          if (!prev.some((m) => m.id === message.id)) {
-            return [...prev, message]
-          }
-          return prev
-        })
-      })
+      const unsubscribe = webSocketService.subscribeToMessages(
+        chatId,
+        (message) => {
+          // Only add the message if it's not already in the list
+          setMessages((prev) => {
+            if (!prev.some((m) => m.id === message.id)) {
+              return [...prev, message];
+            }
+            return prev;
+          });
+        }
+      );
 
       return () => {
-        unsubscribe()
-        webSocketService.disconnect()
-      }
+        unsubscribe();
+        webSocketService.disconnect();
+      };
     }
-  }, [activeChat, user, token, privateChatIds])
+  }, [activeChat, user, token, privateChatIds]);
 
   // Subscribe to connection status
   useEffect(() => {
-    const unsubscribe = webSocketService.subscribeToConnectionStatus((status) => {
-      setConnectionStatus(status === "connected" ? "Connected" : status === "disconnected" ? "Disconnected" : "Error")
-    })
+    const unsubscribe = webSocketService.subscribeToConnectionStatus(
+      (status) => {
+        setConnectionStatus(
+          status === "connected"
+            ? "Connected"
+            : status === "disconnected"
+            ? "Disconnected"
+            : "Error"
+        );
+      }
+    );
 
-    return unsubscribe
-  }, [])
+    return unsubscribe;
+  }, []);
 
   // Load initial data
   useEffect(() => {
-    if (!user || !token) return
+    if (!user || !token) return;
 
     const loadInitialData = async () => {
       try {
-        setIsLoading(true)
-        await refreshData()
+        setIsLoading(true);
+        await refreshData();
       } catch (error) {
-        console.error("Failed to load initial data:", error)
+        console.error("Failed to load initial data:", error);
         toast({
           title: "Error",
           description: "Failed to load data",
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    loadInitialData()
-  }, [user, token])
+    loadInitialData();
+  }, [user, token, refreshData, toast]);
 
   // Load messages when active chat changes
   useEffect(() => {
-    if (!activeChat || !user || !token) return
+    if (!activeChat || !user || !token) return;
 
     const loadMessages = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
         // Check access for group chats
         if (activeChat.type === "group") {
           try {
-            const group = await api.getGroupById(token, activeChat.id)
+            const group = await api.getGroupById(token, activeChat.id);
             if (!isUserInGroup(user.id, group)) {
               toast({
                 title: "Access denied",
                 description: "You are not a member of this group",
                 variant: "destructive",
-              })
-              setActiveChat(null)
-              return
+              });
+              setActiveChat(null);
+              return;
             }
 
-            setMessages(group.messages)
+            setMessages(group.messages);
           } catch (error) {
-            console.error("Error loading group:", error)
+            console.error("Error loading group:", error);
             toast({
               title: "Error",
               description: "Failed to load group",
               variant: "destructive",
-            })
-            setActiveChat(null)
+            });
+            setActiveChat(null);
           }
         } else {
           // For private chats
           try {
             // Get or create private chat
-            const chat = await api.getPrivateChat(token, user.id, activeChat.id)
+            const chat = await api.getPrivateChat(
+              token,
+              user.id,
+              activeChat.id
+            );
 
             // Store the chat ID for WebSocket connection
             setPrivateChatIds((prev) => ({
               ...prev,
               [activeChat.id]: chat.id,
-            }))
+            }));
 
-            setMessages(chat.messages)
+            setMessages(chat.messages);
           } catch (error) {
-            console.error("Error loading private chat:", error)
+            console.error("Error loading private chat:", error);
             toast({
               title: "Error",
               description: "Failed to load messages",
               variant: "destructive",
-            })
-            setActiveChat(null)
+            });
+            setActiveChat(null);
           }
         }
       } catch (error) {
-        console.error("Error loading messages:", error)
+        console.error("Error loading messages:", error);
         toast({
           title: "Error",
           description: "Failed to load messages",
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    loadMessages()
-  }, [activeChat, user, token])
-
-  const refreshData = useCallback(async () => {
-    if (!user || !token) return
-
-    try {
-      // Refresh users and groups
-      const [updatedUsers, updatedGroups] = await Promise.all([api.getAllUsers(token), api.getGroups(token)])
-
-      setUsers(updatedUsers)
-      setGroups(updatedGroups)
-
-      // Refresh messages if there's an active chat
-      if (activeChat) {
-        if (activeChat.type === "group") {
-          const group = await api.getGroupById(token, activeChat.id)
-          setMessages(group.messages)
-        } else {
-          const chat = await api.getPrivateChat(token, user.id, activeChat.id)
-          setMessages(chat.messages)
-        }
-      }
-    } catch (error) {
-      console.error("Error refreshing data:", error)
-    }
-  }, [activeChat, user, token])
+    loadMessages();
+  }, [activeChat, user, token, toast]);
 
   const sendMessage = async (content: string) => {
-    if (!activeChat || !user || !token || isSending) return
+    if (!activeChat || !user || !token || isSending) return;
 
     try {
-      setIsSending(true)
+      setIsSending(true);
 
-      const tempId = `temp-${Date.now()}`
+      const tempId = `temp-${Date.now()}`;
       const optimisticMessage: Message = {
         id: tempId,
         content,
@@ -219,245 +245,260 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         timestamp: new Date().toISOString(),
         edited: false,
         deleted: false,
-      }
+      };
 
-      setMessages((prev) => [...prev, optimisticMessage])
+      setMessages((prev) => [...prev, optimisticMessage]);
 
       // Send message via WebSocket for real-time delivery
-      webSocketService.sendMessage(content)
+      webSocketService.sendMessage(content);
 
       // Also send via REST API for persistence
-      let newMessage: Message
+      let newMessage: Message;
 
       if (activeChat.type === "group") {
-        newMessage = await api.sendGroupMessage(token, activeChat.id, content)
+        newMessage = await api.sendGroupMessage(token, activeChat.id, content);
       } else {
-        const chatId = privateChatIds[activeChat.id]
+        const chatId = privateChatIds[activeChat.id];
         if (!chatId) {
-          throw new Error("Private chat ID not found")
+          throw new Error("Private chat ID not found");
         }
-        newMessage = await api.sendPrivateMessage(token, chatId, content)
+        newMessage = await api.sendPrivateMessage(token, chatId, content);
       }
 
       setMessages((prev) =>
         prev.map((msg) => (msg.id === tempId ? newMessage : msg))
-      )
-      
+      );
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("Error sending message:", error);
       toast({
         title: "Error",
         description: "Failed to send message",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSending(false)
+      setIsSending(false);
     }
-  }
+  };
 
   const editMessage = async (messageId: string, newContent: string) => {
-    if (!activeChat || !user || !token) return
+    if (!activeChat || !user || !token) return;
 
     try {
-      let updatedMessage: Message
+      let updatedMessage: Message;
 
       if (activeChat.type === "group") {
-        updatedMessage = await api.editGroupMessage(token, activeChat.id, messageId, newContent)
+        updatedMessage = await api.editGroupMessage(
+          token,
+          activeChat.id,
+          messageId,
+          newContent
+        );
       } else {
-        const chatId = privateChatIds[activeChat.id]
+        const chatId = privateChatIds[activeChat.id];
         if (!chatId) {
-          throw new Error("Private chat ID not found")
+          throw new Error("Private chat ID not found");
         }
-        updatedMessage = await api.editPrivateMessage(token, chatId, messageId, newContent)
+        updatedMessage = await api.editPrivateMessage(
+          token,
+          chatId,
+          messageId,
+          newContent
+        );
       }
 
       // Update the message in the UI
-      setMessages((prev) => prev.map((msg) => (msg.id === messageId ? updatedMessage : msg)))
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? updatedMessage : msg))
+      );
 
       toast({
         title: "Message edited",
         description: "Your message has been updated",
-      })
+      });
     } catch (error) {
-      console.error("Error editing message:", error)
+      console.error("Error editing message:", error);
       toast({
         title: "Error",
         description: "Failed to edit message",
         variant: "destructive",
-      })
-      await refreshData() // Refresh messages if edit fails
+      });
+      await refreshData(); // Refresh messages if edit fails
     }
-  }
+  };
 
   const deleteMessage = async (messageId: string) => {
-    if (!activeChat || !user || !token) return
+    if (!activeChat || !user || !token) return;
 
     try {
       if (activeChat.type === "group") {
-        await api.deleteGroupMessage(token, activeChat.id, messageId)
+        await api.deleteGroupMessage(token, activeChat.id, messageId);
       } else {
-        const chatId = privateChatIds[activeChat.id]
+        const chatId = privateChatIds[activeChat.id];
         if (!chatId) {
-          throw new Error("Private chat ID not found")
+          throw new Error("Private chat ID not found");
         }
-        await api.deletePrivateMessage(token, chatId, messageId)
+        await api.deletePrivateMessage(token, chatId, messageId);
       }
 
       // Update the message in the UI
-      setMessages((prev) => prev.map((msg) => (msg.id === messageId ? { ...msg, deleted: true } : msg)))
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, deleted: true } : msg
+        )
+      );
 
       toast({
         title: "Message deleted",
         description: "Your message has been removed",
-      })
+      });
     } catch (error) {
-      console.error("Error deleting message:", error)
+      console.error("Error deleting message:", error);
       toast({
         title: "Error",
         description: "Failed to delete message",
         variant: "destructive",
-      })
-      await refreshData() // Refresh messages if delete fails
+      });
+      await refreshData(); // Refresh messages if delete fails
     }
-  }
+  };
 
   const createGroup = async (name: string) => {
-    if (!user || !token) return
+    if (!user || !token) return;
 
     try {
-      const newGroup = await api.createGroup(token, name)
-      setGroups((prev) => [...prev, newGroup])
+      const newGroup = await api.createGroup(token, name);
+      setGroups((prev) => [...prev, newGroup]);
 
       toast({
         title: "Group created",
         description: `${name} has been created successfully`,
-      })
+      });
 
       // Automatically set the new group as active
-      setActiveChat({ type: "group", id: newGroup.id })
+      setActiveChat({ type: "group", id: newGroup.id });
     } catch (error) {
-      console.error("Error creating group:", error)
+      console.error("Error creating group:", error);
       toast({
         title: "Error",
         description: "Failed to create group",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const joinGroup = async (groupId: string) => {
-    if (!user || !token) return
+    if (!user || !token) return;
 
     try {
-      await api.joinGroup(token, groupId)
+      await api.joinGroup(token, groupId);
 
       // Refresh groups to get updated member list
-      const updatedGroups = await api.getGroups(token)
-      setGroups(updatedGroups)
+      const updatedGroups = await api.getGroups(token);
+      setGroups(updatedGroups);
 
       toast({
         title: "Group joined",
         description: "You have joined the group successfully",
-      })
+      });
 
       // Automatically set the joined group as active
-      setActiveChat({ type: "group", id: groupId })
+      setActiveChat({ type: "group", id: groupId });
     } catch (error) {
-      console.error("Error joining group:", error)
+      console.error("Error joining group:", error);
       toast({
         title: "Error",
         description: "Failed to join group",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
-  const addMemberToGroup = async (groupId: string, userId: string) => {
-    if (!token) return
+  const addMemberToGroup = async (groupId: string) => {
+    if (!token) return;
 
     try {
       // This is a placeholder since the backend doesn't have a direct endpoint
       // We'll use the join group endpoint which adds the user to the group
-      await api.joinGroup(token, groupId)
+      await api.joinGroup(token, groupId);
 
       // Refresh groups to get updated member list
-      const updatedGroups = await api.getGroups(token)
-      setGroups(updatedGroups)
+      const updatedGroups = await api.getGroups(token);
+      setGroups(updatedGroups);
 
       toast({
         title: "Member added",
         description: "New member has been added to the group",
-      })
+      });
     } catch (error) {
-      console.error("Error adding member to group:", error)
+      console.error("Error adding member to group:", error);
       toast({
         title: "Error",
         description: "Failed to add member to group",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const getGroupById = async (groupId: string) => {
-    if (!token) return undefined
+    if (!token) return undefined;
 
     try {
-      return await api.getGroupById(token, groupId)
+      return await api.getGroupById(token, groupId);
     } catch (error) {
-      console.error("Error fetching group:", error)
-      return undefined
+      console.error("Error fetching group:", error);
+      return undefined;
     }
-  }
+  };
 
   const getGroupMembers = async (groupId: string) => {
-    if (!token) return []
+    if (!token) return [];
 
     try {
-      const group = await api.getGroupById(token, groupId)
+      const group = await api.getGroupById(token, groupId);
       // Map member IDs to user objects
-      return users.filter((user) => group.members.includes(user.id))
+      return users.filter((user) => group.members.includes(user.id));
     } catch (error) {
-      console.error("Error fetching group members:", error)
-      return []
+      console.error("Error fetching group members:", error);
+      return [];
     }
-  }
+  };
 
   const canAccessGroup = useCallback(
     (groupId: string) => {
-      if (!user) return false
+      if (!user) return false;
 
-      const group = groups.find((g) => g.id === groupId)
-      if (!group) return false
+      const group = groups.find((g) => g.id === groupId);
+      if (!group) return false;
 
-      return isUserInGroup(user.id, group)
+      return isUserInGroup(user.id, group);
     },
-    [user, groups],
-  )
+    [user, groups]
+  );
 
   const setActiveChatWithCheck = useCallback(
     (chat: ActiveChat | null) => {
       if (!chat || !user) {
-        setActiveChat(null)
-        return
+        setActiveChat(null);
+        return;
       }
 
       // If it's a group chat, check if the user is a member
       if (chat.type === "group") {
-        const group = groups.find((g) => g.id === chat.id)
+        const group = groups.find((g) => g.id === chat.id);
         if (group && !isUserInGroup(user.id, group)) {
           toast({
             title: "Access denied",
             description: "You are not a member of this group",
             variant: "destructive",
-          })
-          return
+          });
+          return;
         }
       }
 
-      setActiveChat(chat)
+      setActiveChat(chat);
     },
-    [user, groups, toast],
-  )
+    [user, groups, toast]
+  );
 
   const value = {
     users,
@@ -478,15 +519,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     getGroupById,
     getGroupMembers,
     canAccessGroup,
-  }
+  };
 
-  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
 
 export function useChat() {
-  const context = useContext(ChatContext)
+  const context = useContext(ChatContext);
   if (context === undefined) {
-    throw new Error("useChat must be used within a ChatProvider")
+    throw new Error("useChat must be used within a ChatProvider");
   }
-  return context
+  return context;
 }

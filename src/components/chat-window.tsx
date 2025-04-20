@@ -69,26 +69,22 @@ export function ChatWindow({
   const [autoScroll, setAutoScroll] = useState(true);
   const [prevMessagesLength, setPrevMessagesLength] = useState(0);
   const typingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+
   useEffect(() => {
+    const scrollElement = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+    if (!scrollElement) return;
+
     const handleScroll = () => {
-      if (!scrollAreaRef.current) return;
-      const scrollElement = scrollAreaRef.current.querySelector(
-        "[data-radix-scroll-area-viewport]"
-      );
-      if (!scrollElement) return;
       const { scrollTop, scrollHeight, clientHeight } = scrollElement;
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       setAutoScroll(isNearBottom);
     };
 
-    const scrollElement = scrollAreaRef.current?.querySelector(
-      "[data-radix-scroll-area-viewport]"
-    );
-    if (scrollElement) {
-      scrollElement.addEventListener("scroll", handleScroll);
-      return () => scrollElement.removeEventListener("scroll", handleScroll);
-    }
-  }, [scrollAreaRef.current]);
+    scrollElement.addEventListener("scroll", handleScroll);
+    return () => scrollElement.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (
@@ -216,7 +212,7 @@ export function ChatWindow({
       typingTimeouts.current = {};
       setTypingUsers([]);
     };
-  }, [activeChat]);
+  }, [activeChat, currentUser.username]);
 
   if (isLoading) {
     return (
@@ -239,7 +235,7 @@ export function ChatWindow({
           className="h-full p-1 overflow-y-auto max-h-[calc(100vh-200px)]"
           scrollHideDelay={300}
           type="always"
-          ref={scrollAreaRef as any}
+          ref={scrollAreaRef}
         >
           <div className="p-3 md:p-2 pb-6 min-h-full">
             {activeChat ? (
