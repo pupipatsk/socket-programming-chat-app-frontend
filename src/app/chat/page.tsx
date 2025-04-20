@@ -14,9 +14,10 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Menu, X } from "lucide-react";
 import { useState } from "react";
-
+import { api } from "@/lib/api";
+import type { User } from "@/types";
 function ChatPageContent() {
-  const { user, logout } = useAuth();
+  const { user, logout,token } = useAuth();
   const {
     users,
     groups,
@@ -36,9 +37,25 @@ function ChatPageContent() {
     getGroupMembers,
   } = useChat();
 
+
   const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [showAddMembers, setShowAddMembers] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      if (!token) return;
+      try {
+        const result = await api.getAllUsers(token);
+        setAllUsers(result);
+      } catch (err) {
+        console.error("Failed to fetch all users:", err);
+      }
+    };
+
+    fetchAllUsers();
+  }, [token]);
 
   // Responsive state
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -90,8 +107,8 @@ function ChatPageContent() {
     setShowSidebar(!showSidebar);
   };
 
-  if (!user) return null;
 
+  if (!user) return null;
   return (
     <ChatLayout
       user={user}
@@ -203,7 +220,7 @@ function ChatPageContent() {
         onOpenChange={setGroupDetailsOpen}
         group={selectedGroup}
         currentUser={user}
-        allUsers={users}
+        allUsers={allUsers}
         onAddMember={addMemberToGroup}
         showAddMembersSection={showAddMembers}
         isMobile={isMobile}
