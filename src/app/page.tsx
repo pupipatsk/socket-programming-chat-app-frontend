@@ -126,9 +126,9 @@ export default function HomePage() {
                 {isLoading ? (isLogin ? "Logging in..." : "Creating account...") : isLogin ? "Login" : "Register"}
               </Button>
 
-              <Button type="button" variant="secondary" className="w-full" onClick={guestLogin} disabled={isLoading}>
+              {/* <Button type="button" variant="secondary" className="w-full" onClick={guestLogin} disabled={isLoading}>
                 Continue as Guest
-              </Button>
+              </Button> */}
             </form>
           </CardContent>
           <CardFooter className="flex justify-center">
