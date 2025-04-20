@@ -9,12 +9,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
-import { UserPlus, Search } from "lucide-react";
 
 interface GroupDetailsProps {
   open: boolean;
@@ -33,14 +30,12 @@ export function GroupDetails({
   group,
   currentUser,
   allUsers,
-  onAddMember,
   showAddMembersSection = false,
   isMobile = false,
 }: GroupDetailsProps) {
   const { token } = useAuth();
   const [members, setMembers] = useState<User[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isCreator, setIsCreator] = useState(false);
+  const [, setIsCreator] = useState(false);
   // const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -75,12 +70,6 @@ export function GroupDetails({
   const onlineMembers = members.filter((member) => member.status === "online");
   const offlineMembers = members.filter(
     (member) => member.status === "offline"
-  );
-
-  const filteredUsers = allUsers.filter(
-    (user) =>
-      !members.some((member) => member.id === user.id) &&
-      user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
